@@ -1,0 +1,398 @@
+<title>Photon Dash</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;700&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+  /* single committed look: a dark arcade cabinet in the REPACSS colors */
+  :root {
+    color-scheme: dark;
+    --ground: #03050b; --panel: rgba(12,18,32,.82); --line: rgba(255,255,255,.12); --ink: #eef2fb; --dim: #9aa6c2;
+    --sun: #ffb53c; --elec: #3fd8ff; --tok: #b18cff; --batt: #7dffa5; --alarm: #ff5d6c;
+    --display: "Saira Condensed", "Arial Narrow", sans-serif; --body: Figtree, "Avenir Next", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; margin: 0; background: var(--ground); color: var(--ink); overflow: hidden; }
+  body { font: 15px/1.45 var(--body); }
+  #app { position: fixed; inset: 0; touch-action: none; user-select: none; -webkit-user-select: none; }
+  #c { display: block; width: 100%; height: 100%; }
+  .hud { position: absolute; inset: 0; pointer-events: none;
+    padding: calc(14px + env(safe-area-inset-top, 0px)) 16px calc(16px + env(safe-area-inset-bottom, 0px)); display: grid; grid-template-rows: auto 1fr auto; }
+  .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .stage .k { font: 600 12px/1 var(--body); letter-spacing: .2em; text-transform: uppercase; color: var(--dim); }
+  .stage .t { font: 700 clamp(24px, 3.4vw, 40px)/1.05 var(--display); margin-top: 4px; text-shadow: 0 2px 16px rgba(0,0,0,.6); }
+  .right { display: flex; gap: 8px; align-items: center; pointer-events: auto; }
+  .score { text-align: right; margin-right: 6px; }
+  .score .v { font: 700 clamp(26px, 3.6vw, 42px)/1 var(--mono); font-variant-numeric: tabular-nums; }
+  .score .k { font: 600 11px/1 var(--body); letter-spacing: .2em; text-transform: uppercase; color: var(--dim); }
+  .ib { width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); font: 600 15px/1 var(--body); cursor: pointer; }
+  .ib:focus-visible, .btn:focus-visible { outline: 2px solid var(--elec); outline-offset: 2px; }
+  .bottom { display: grid; justify-items: center; gap: 10px; }
+  .sent { font: 600 clamp(16px, 2.2vw, 22px)/1.2 var(--body); color: var(--tok); text-align: center; min-height: 1.2em; text-shadow: 0 1px 10px rgba(0,0,0,.7); }
+  .sent span { color: #3d3560; }
+  .energy { width: min(520px, 100%); display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; }
+  .energy .k { font: 600 11px/1 var(--body); letter-spacing: .2em; text-transform: uppercase; color: var(--dim); }
+  .bar { height: 12px; border-radius: 6px; background: rgba(255,255,255,.1); overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 100%; border-radius: 6px; background: linear-gradient(90deg, var(--sun), #ffe08a); transition: width .15s; }
+  .energy .v { font: 700 14px/1 var(--mono); min-width: 3ch; text-align: right; }
+  .banner { position: absolute; left: 50%; top: 22%; transform: translateX(-50%); width: min(720px, calc(100% - 32px)); text-align: center; pointer-events: none; transition: opacity .5s; }
+  .banner .t { font: 700 clamp(30px, 5vw, 58px)/1 var(--display); text-shadow: 0 3px 24px rgba(0,0,0,.7); }
+  .banner .f { margin-top: 10px; font: 500 clamp(15px, 1.8vw, 19px)/1.45 var(--body); color: #dfe6f6; text-shadow: 0 1px 12px rgba(0,0,0,.9); text-wrap: balance; }
+  .flash { position: absolute; inset: 0; pointer-events: none; opacity: 0; }
+  .ov { position: absolute; inset: 0; display: grid; place-items: center; padding: 16px; background: radial-gradient(ellipse at 50% 40%, rgba(3,5,11,.35), rgba(3,5,11,.85)); overflow-y: auto; }
+  .card { width: min(640px, 100%); background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: clamp(18px, 4vw, 32px); display: grid; gap: 14px; backdrop-filter: blur(10px); }
+  .card .k { font: 600 12px/1 var(--body); letter-spacing: .2em; text-transform: uppercase; color: var(--dim); }
+  .card h1 { margin: 0; font: 700 clamp(52px, 10vw, 92px)/.9 var(--display); letter-spacing: .01em;
+    background: linear-gradient(90deg, var(--sun), var(--elec) 55%, var(--tok)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .card p { margin: 0; color: #d3dbee; max-width: 60ch; }
+  .card ol { margin: 0; padding-left: 22px; display: grid; gap: 3px; color: #d3dbee; }
+  .card ol b { color: var(--ink); font-weight: 600; }
+  .btns { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .btn { border: 0; border-radius: 12px; padding: 13px 22px; font: 700 18px/1 var(--display); letter-spacing: .06em; text-transform: uppercase; cursor: pointer;
+    background: linear-gradient(90deg, var(--sun), #ffd27a); color: #1d1404; }
+  .hint { color: var(--dim); font-size: 13.5px; }
+  .big { font: 700 64px/1 var(--mono); font-variant-numeric: tabular-nums; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; }
+  .stats div { background: rgba(255,255,255,.05); border-radius: 10px; padding: 9px 12px; }
+  .stats b { display: block; font: 700 22px/1.1 var(--display); margin-top: 3px; }
+  .foot { font-size: 12px; color: #6f7b98; }
+  @media (prefers-reduced-motion: reduce) { .bar i, .banner { transition: none; } }
+</style>
+
+<div id="app">
+  <canvas id="c" aria-label="Photon Dash: steer a glowing particle through space, sky, wires, the machine room and tensor cores"></canvas>
+  <div class="flash" id="flash"></div>
+  <div class="hud">
+    <div class="top">
+      <div class="stage"><div class="k" id="stageK">Stage 1 of 5 · Lap 1</div><div class="t" id="stageT">Leaving the Sun</div></div>
+      <div class="right">
+        <div class="score"><div class="k">Score</div><div class="v" id="score">0</div></div>
+        <button class="ib" id="mute" aria-label="Sound off">♪</button>
+        <button class="ib" id="pause" aria-label="Pause">II</button>
+      </div>
+    </div>
+    <div></div>
+    <div class="bottom">
+      <div class="sent" id="sent" aria-live="polite"></div>
+      <div class="energy"><span class="k" id="formK">Photon energy</span><div class="bar"><i id="bar"></i></div><span class="v" id="energy">100</span></div>
+    </div>
+  </div>
+  <div class="banner" id="banner" style="opacity:0"><div class="t" id="bannerT"></div><div class="f" id="bannerF"></div></div>
+
+  <div class="ov" id="ovStart">
+    <div class="card">
+      <div class="k">A REPACSS 3D game · Texas Tech University</div>
+      <h1>Photon Dash</h1>
+      <p>Every AI token starts as sunlight. Ride one photon all the way: off the Sun, through the West Texas sky, into the REPACSS solar array, down the power bus and into the cluster, until it comes out as a token.</p>
+      <ol>
+        <li><b>Leaving the Sun</b> · dodge space dust</li>
+        <li><b>West Texas sky</b> · dodge clouds, dive into the 350 kW array</li>
+        <li><b>Silicon to the power bus</b> · now an electron: dodge hot resistors, fly through the rings</li>
+        <li><b>The REPACSS cluster</b> · weave past heat plumes, grab data packets</li>
+        <li><b>Tensor cores</b> · collect the tokens in order</li>
+      </ol>
+      <p>Your energy drains as you fly. Collect glowing pickups to refill it, and fly through rings for bonuses.</p>
+      <div class="btns"><button class="btn" id="go">Launch</button><span class="hint">Steer with the mouse, a finger, or arrow keys / WASD · P pauses</span></div>
+      <div class="foot">Facility figures follow REPACSS at the GLEAMM microgrid, Reese Technology Center. Supported by the U.S. National Science Foundation under Grant No. 2404438 · repacss.org</div>
+    </div>
+  </div>
+  <div class="ov" id="ovEnd" hidden><div class="card" id="endCard"></div></div>
+  <div class="ov" id="ovPause" hidden><div class="card"><div class="k">Paused</div><div class="btns"><button class="btn" id="resume">Resume</button><span class="hint">or press P</span></div></div></div>
+</div>
+
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+const $ = (id) => document.getElementById(id);
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x)), lerp = (a, b, t) => a + (b - a) * t, rand = (a, b) => a + Math.random() * (b - a);
+const R = 5.2, SPAWN = 170, PHASE_LEN = 1100;
+
+// ---------- the five stages ----------
+const FORM = { photon: [0xffd27a, 'Photon energy'], electron: [0x3fd8ff, 'Electron charge'], token: [0xb18cff, 'Token energy'] };
+const STAGES = [
+  { title: 'Leaving the Sun', fact: 'Sunlight takes about 8 minutes 20 seconds to cross 150 million km to Earth.', bg: 0x02030a, fog: [0x02030a, 80, 230], form: 'photon', dust: 0xfff3d6, hit: 'rock', gain: 'spark', rings: null, decor: null },
+  { title: 'The West Texas sky', fact: 'A passing cloud can cut solar output by half in under a minute. The 760 kWh battery smooths the dip so jobs keep running.', bg: 0x78a9dc, fog: [0x9cc4ec, 45, 175], form: 'photon', dust: 0xffffff, hit: 'cloud', gain: 'beam', rings: null, decor: null },
+  { title: 'Silicon to the power bus', fact: 'Above silicon\'s 1.1 eV band gap, a photon frees an electron. The 350 kW array makes DC, and the inverter shapes clean 60 Hz AC.', bg: 0x170b05, fog: [0x170b05, 30, 150], form: 'electron', dust: 0xffa860, hit: 'resistor', gain: 'charge', rings: ['INVERTER · 60 Hz', 'BATTERY · 760 kWh', 'UPS', 'PDU'], decor: 'conduit' },
+  { title: 'Into the REPACSS cluster', fact: '110 CPU nodes, 8 GPU nodes with 32 NVIDIA H100s, and about 2.9 PB of storage, all on 200 Gb/s InfiniBand.', bg: 0x05080f, fog: [0x05080f, 30, 150], form: 'electron', dust: 0x3fd8ff, hit: 'heat', gain: 'packet', rings: ['INFINIBAND · 200 Gb/s', 'LEAF SWITCH', 'CORE SWITCH · 800 Gb/s'], decor: 'racks' },
+  { title: 'Tensor cores to tokens', fact: 'Layer by layer, the GPU turns electrons into arithmetic, and arithmetic into the next token.', bg: 0x030907, fog: [0x030907, 30, 150], form: 'token', dust: 0x8dff6f, hit: 'stall', gain: 'token', rings: ['H100 NVL', 'HBM3 · 94 GB'], decor: 'frames' },
+];
+const SENTENCE = 'Every token begins as sunlight on the West Texas plains'.split(' ');
+
+// ---------- renderer ----------
+const canvas = $('c'), renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(2, devicePixelRatio)); renderer.toneMapping = THREE.ACESFilmicToneMapping;
+const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(70, 1, .1, 600);
+scene.background = new THREE.Color(STAGES[0].bg); scene.fog = new THREE.Fog(...STAGES[0].fog);
+scene.add(new THREE.HemisphereLight(0xdfe8ff, 0x202030, 1.2)); const key = new THREE.DirectionalLight(0xffffff, 1.4); key.position.set(3, 6, 4); scene.add(key);
+const composer = new EffectComposer(renderer); composer.addPass(new RenderPass(scene, camera));
+const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), .7, .45, .68); composer.addPass(bloom); composer.addPass(new OutputPass());
+function resize() { const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); composer.setSize(w, h); camera.aspect = w / h; camera.fov = w < h ? 88 : 70; camera.updateProjectionMatrix(); }
+addEventListener('resize', resize); resize();
+
+// ---------- textures ----------
+let _glow; const glowTex = () => _glow ??= (() => { const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d'), r = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+  r.addColorStop(0, '#fff'); r.addColorStop(.25, 'rgba(255,255,255,.8)'); r.addColorStop(.6, 'rgba(255,255,255,.15)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, 128, 128); return new THREE.CanvasTexture(c); })();
+const glow = (color, size, op = 1) => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex(), color, transparent: true, opacity: op, blending: THREE.AdditiveBlending, depthWrite: false })); s.scale.setScalar(size); return s; };
+function label(text, color = '#fff', h = .8) {
+  const c = document.createElement('canvas'), g = c.getContext('2d'), f = '700 64px "Saira Condensed", "Arial Narrow", sans-serif';
+  g.font = f; const w = Math.ceil(g.measureText(text).width) + 40; c.width = w; c.height = 96; g.font = f; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.shadowColor = 'rgba(0,0,0,.8)'; g.shadowBlur = 12; g.fillStyle = color; g.fillText(text, w / 2, 50);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, transparent: true, depthWrite: false, fog: false })); s.scale.set(h * w / 96, h, 1); return s;
+}
+function canvasTex(w, h, draw) { const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; }
+const earthTex = canvasTex(1024, 512, (g, w, h) => {
+  g.fillStyle = '#1d4f9a'; g.fillRect(0, 0, w, h);
+  for (let i = 0; i < 26; i++) { g.fillStyle = ['#3f7a3a', '#8a7a4a', '#5c8a43'][i % 3]; g.beginPath(); g.ellipse(Math.random() * w, h * (.2 + Math.random() * .6), 30 + Math.random() * 110, 20 + Math.random() * 60, Math.random() * 3, 0, 7); g.fill(); }
+  g.fillStyle = 'rgba(255,255,255,.75)'; for (let i = 0; i < 70; i++) { g.beginPath(); g.ellipse(Math.random() * w, Math.random() * h, 20 + Math.random() * 80, 4 + Math.random() * 10, Math.random() * .6 - .3, 0, 7); g.fill(); }
+});
+const panelTex = canvasTex(512, 512, (g, w, h) => {
+  g.fillStyle = '#0b1a44'; g.fillRect(0, 0, w, h);
+  for (let i = 0; i < 16; i++) for (let j = 0; j < 16; j++) { const gr = g.createLinearGradient(0, j * 32, 0, j * 32 + 30); gr.addColorStop(0, '#2a55b8'); gr.addColorStop(1, '#122e78'); g.fillStyle = gr; g.fillRect(i * 32 + 2, j * 32 + 2, 28, 28); }
+});
+panelTex.wrapS = panelTex.wrapT = THREE.RepeatWrapping; panelTex.repeat.set(6, 6);
+
+// ---------- player ----------
+const player = new THREE.Group(); scene.add(player);
+const core = new THREE.Mesh(new THREE.SphereGeometry(.42, 24, 16), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+const halo = glow(FORM.photon[0], 3.4), trail = Array.from({ length: 22 }, (_, i) => { const s = glow(FORM.photon[0], 1.6 - i * .06, .55 - i * .023); scene.add(s); return s; });
+player.add(core, halo);
+const hist = [];
+
+// ---------- background particles: stars, wind, sparks ----------
+const DUST = 1600, dpos = new Float32Array(DUST * 3);
+for (let i = 0; i < DUST; i++) { const a = Math.random() * 6.283, r = 9 + Math.random() * 45; dpos.set([Math.cos(a) * r, Math.sin(a) * r, -Math.random() * 230 + 10], i * 3); }
+const dust = new THREE.Points(new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(dpos, 3)),
+  new THREE.PointsMaterial({ color: STAGES[0].dust, size: .35, map: glowTex(), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+scene.add(dust);
+
+// stage props: the Sun behind, Earth ahead, the solar array to dive into
+const sun = glow(0xffc46b, 160, .9); sun.position.set(0, 0, 140); scene.add(sun);
+const earth = new THREE.Mesh(new THREE.SphereGeometry(60, 64, 32), new THREE.MeshStandardMaterial({ map: earthTex, roughness: .8 })); scene.add(earth);
+const atmo = glow(0x6fb4ff, 150, .5); earth.add(atmo);
+const array = new THREE.Mesh(new THREE.PlaneGeometry(220, 220), new THREE.MeshStandardMaterial({ map: panelTex, metalness: .6, roughness: .3, emissive: 0x0a1a40, emissiveIntensity: .6 })); scene.add(array);
+
+// ---------- items: obstacles, pickups, rings, decor ----------
+const G = {
+  rock: new THREE.DodecahedronGeometry(1, 0), ball: new THREE.SphereGeometry(1, 16, 12), oct: new THREE.OctahedronGeometry(.55), cube: new THREE.BoxGeometry(1, 1, 1),
+  bar: new THREE.BoxGeometry(1, .42, .42), col: new THREE.CylinderGeometry(1.1, 1.1, 16, 20, 1, true), ring: new THREE.TorusGeometry(2.3, .14, 10, 48), conduit: new THREE.TorusGeometry(7.2, .12, 6, 48),
+};
+const M = {
+  rock: new THREE.MeshStandardMaterial({ color: 0x8a8278, roughness: .9, flatShading: true }),
+  cloud: new THREE.MeshStandardMaterial({ color: 0xf6f8fc, roughness: 1, transparent: true, opacity: .93 }),
+  resistor: new THREE.MeshStandardMaterial({ color: 0x3a1208, emissive: 0xff3a1a, emissiveIntensity: 2.2 }),
+  heat: new THREE.MeshBasicMaterial({ color: 0xff7a2a, transparent: true, opacity: .17, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending }),
+  stall: new THREE.MeshStandardMaterial({ color: 0x0c1410, emissive: 0x1d5a2a, emissiveIntensity: .6, roughness: .4 }),
+  copper: new THREE.MeshStandardMaterial({ color: 0xb8632f, emissive: 0x5a2008, emissiveIntensity: .8, metalness: .8, roughness: .35 }),
+  rack: new THREE.MeshStandardMaterial({ color: 0x141b2a, metalness: .7, roughness: .4 }),
+  frame: new THREE.MeshBasicMaterial({ color: 0x2bff7a }),
+};
+const items = [];
+function add(kind, obj, x, y, z, extra = {}) { obj.position.set(x, y, z); scene.add(obj); const it = { kind, obj, x, y, z, ...extra }; items.push(it); return it; }
+const inDisc = (r = R) => { const a = Math.random() * 6.283, d = Math.sqrt(Math.random()) * r; return [Math.cos(a) * d, Math.sin(a) * d]; };
+
+function spawnHit(st, z) {
+  const [x, y] = inDisc();
+  if (st.hit === 'rock') { const m = new THREE.Mesh(G.rock, M.rock), s = rand(.8, 1.5); m.scale.setScalar(s); return add('hit', m, x, y, z, { r: s * .85, dmg: 18, spin: rand(-2, 2) }); }
+  if (st.hit === 'cloud') {
+    const g = new THREE.Group(); for (let k = 0; k < 6; k++) { const b = new THREE.Mesh(G.ball, M.cloud); b.scale.set(rand(.8, 1.3), rand(.6, .9), rand(.8, 1.2)); b.position.set(rand(-1.1, 1.1), rand(-.4, .4), rand(-.7, .7)); g.add(b); }
+    return add('hit', g, x, y, z, { r: 1.7, dmg: 10 });
+  }
+  if (st.hit === 'resistor') { const m = new THREE.Mesh(G.bar, M.resistor); m.scale.x = 9; m.rotation.z = Math.random() * Math.PI; return add('hit', m, 0, y * .3, z, { bar: true, r: .55, dmg: 20, spin: rand(-1, 1) }); }
+  if (st.hit === 'heat') { const m = new THREE.Mesh(G.col, M.heat); return add('hit', m, x, 0, z, { column: true, r: 1.15, dmg: 16 }); }
+  const m = new THREE.Mesh(G.cube, M.stall), s = rand(1.6, 2.4); m.scale.setScalar(s);
+  m.add(new THREE.LineSegments(new THREE.EdgesGeometry(G.cube), new THREE.LineBasicMaterial({ color: 0x5cff8f })));
+  return add('hit', m, x, y, z, { r: s * .62, dmg: 18, spin: .5 });
+}
+const GAIN = { spark: 0xffd27a, beam: 0xfff1a8, charge: 0x3fd8ff, packet: 0xb18cff };
+function spawnGains(st, z) {
+  const [x0, y0] = inDisc(R * .75), [x1, y1] = inDisc(R * .75);
+  if (st.gain === 'token') {
+    const w = SENTENCE[(state.tokens + pendingTokens) % SENTENCE.length]; pendingTokens++;
+    const s = label(w, '#e3d6ff', 1.1); s.add(glow(0xb18cff, 2.6, .7)); return add('gain', s, x0, y0, z, { r: 1.25, val: 9, word: w });
+  }
+  for (let k = 0; k < 5; k++) {
+    const u = k / 4, x = lerp(x0, x1, u), y = lerp(y0, y1, u), c = GAIN[st.gain];
+    const m = new THREE.Mesh(st.gain === 'packet' ? G.cube : G.oct, new THREE.MeshBasicMaterial({ color: c })); if (st.gain === 'packet') m.scale.setScalar(.6);
+    m.add(glow(c, 1.5, .6)); add('gain', m, x, y, z - k * 3.2, { r: .95, val: 5, spin: 3 });
+  }
+}
+let ringIx = 0;
+function spawnRing(st, z) {
+  const [x, y] = inDisc(R * .6), g = new THREE.Group(), col = st.form === 'token' ? 0x8dff6f : st.form === 'electron' ? 0x7dffa5 : 0xffd27a;
+  g.add(new THREE.Mesh(G.ring, new THREE.MeshBasicMaterial({ color: col })));
+  const l = label(st.rings[ringIx++ % st.rings.length], '#eafff0', .9); l.position.y = 3.2; g.add(l);
+  return add('ring', g, x, y, z, { r: 2.1 });
+}
+function spawnDecor(st, z) {
+  if (st.decor === 'conduit') { const m = new THREE.Mesh(G.conduit, M.copper); return add('decor', m, 0, 0, z); }
+  if (st.decor === 'frames') {
+    const g = new THREE.Group(); for (const [w, h, x, y] of [[15, .12, 0, 7.2], [15, .12, 0, -7.2], [.12, 15, 7.2, 0], [.12, 15, -7.2, 0]]) { const b = new THREE.Mesh(G.cube, M.frame); b.scale.set(w, h, .12); b.position.set(x, y, 0); g.add(b); }
+    return add('decor', g, 0, 0, z);
+  }
+  if (st.decor === 'racks') {
+    const g = new THREE.Group();
+    for (const sx of [-1, 1]) {
+      const r = new THREE.Mesh(G.cube, M.rack); r.scale.set(1.8, 12, 2.6); r.position.set(sx * 9.4, 0, 0); g.add(r);
+      for (let k = 0; k < 8; k++) { const led = new THREE.Mesh(G.cube, new THREE.MeshBasicMaterial({ color: [0x3fd8ff, 0x7dffa5, 0xb18cff, 0x3fd8ff][(k + Math.floor(z)) % 4] })); led.scale.set(.05, .06, .7); led.position.set(sx * 8.48, -5 + k * 1.4, 0); g.add(led); }
+    }
+    return add('decor', g, 0, 0, z);
+  }
+}
+
+// ---------- game state ----------
+const state = { mode: 'attract', d: 0, speed: 30, energy: 100, score: 0, stage: 0, lap: 0, tokens: 0, rings: 0, picks: 0, hits: 0, best: 0, paused: false };
+let pendingTokens = 0, next = { hit: 40, gain: 30, ring: 160, decor: 0 }, target = { x: 0, y: 0 }, pos = { x: 0, y: 0 }, shake = 0, keys = new Set(), last = performance.now();
+try { state.best = +localStorage.getItem('photon-dash-best') || 0; } catch {}
+const stageAt = (d) => Math.floor(d / PHASE_LEN) % STAGES.length, lapAt = (d) => Math.floor(d / PHASE_LEN / STAGES.length);
+
+function reset(mode) {
+  for (const it of items) scene.remove(it.obj); items.length = 0;
+  Object.assign(state, { mode, d: 0, speed: 30, energy: 100, score: 0, stage: 0, lap: 0, tokens: 0, rings: 0, picks: 0, hits: 0, paused: false });
+  // practice: index.html#stage3 starts at stage 3
+  const from = (clamp(+(/stage(\d)/.exec(location.hash)?.[1] ?? 1), 1, 5) - 1) * PHASE_LEN; state.d = from;
+  pendingTokens = 0; ringIx = 0; next = { hit: from + 40, gain: from + 30, ring: from + 160, decor: from }; pos = { x: 0, y: 0 }; target = { x: 0, y: 0 }; hist.length = 0;
+  setStage(stageAt(from), true);
+}
+
+// ---------- audio (synthesized, starts on the first click) ----------
+let ac = null, muted = false;
+function tone(f0, f1, dur, type = 'sine', vol = .08) {
+  if (!ac || muted) return; const t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain();
+  o.type = type; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+  o.connect(g).connect(ac.destination); o.start(t); o.stop(t + dur);
+}
+$('mute').onclick = () => { muted = !muted; $('mute').style.opacity = muted ? .45 : 1; $('mute').setAttribute('aria-label', muted ? 'Sound on' : 'Sound off'); };
+
+// ---------- HUD ----------
+let bannerT = 0;
+function banner(title, fact, ms = 4200) { $('bannerT').textContent = title; $('bannerF').textContent = fact; $('banner').style.opacity = 1; bannerT = performance.now() + ms; }
+function flash(color, op = .7) { const f = $('flash'); f.style.transition = 'none'; f.style.background = color; f.style.opacity = op; requestAnimationFrame(() => { f.style.transition = 'opacity .6s'; f.style.opacity = 0; }); }
+function setStage(i, silent) {
+  const st = STAGES[i]; state.stage = i;
+  $('stageT').textContent = st.title; $('stageK').textContent = `Stage ${i + 1} of 5 · Lap ${state.lap + 1}`;
+  const [col, k] = FORM[st.form]; core.material.color.set(0xffffff); halo.material.color.set(col); trail.forEach(t => t.material.color.set(col));
+  $('formK').textContent = k; $('bar').style.background = st.form === 'photon' ? 'linear-gradient(90deg,#ffb53c,#ffe08a)' : st.form === 'electron' ? 'linear-gradient(90deg,#1aa8d8,#7fe8ff)' : 'linear-gradient(90deg,#7b5cff,#d4c2ff)';
+  if (!silent) { banner(st.title, st.fact); flash(i === 2 ? '#ffffff' : '#000000', i === 2 ? .9 : .6); tone(330, 990, .5, 'triangle', .07); }
+  dust.material.color.set(st.dust);
+}
+function hud() {
+  $('score').textContent = Math.floor(state.score).toLocaleString('en-US');
+  $('bar').style.width = state.energy + '%'; $('energy').textContent = Math.ceil(state.energy);
+  const st = STAGES[state.stage];
+  $('sent').innerHTML = st.form === 'token' || state.tokens ? SENTENCE.map((w, i) => i < state.tokens % SENTENCE.length || (state.tokens && state.tokens % SENTENCE.length === 0) ? w : `<span>${w.replace(/./g, '·')}</span>`).join(' ') : '';
+  if (performance.now() > bannerT) $('banner').style.opacity = 0;
+}
+
+// ---------- input ----------
+addEventListener('pointermove', (e) => { if (state.mode !== 'play') return; const k = R * 1.25; let x = (e.clientX / innerWidth * 2 - 1) * k, y = -(e.clientY / innerHeight * 2 - 1) * k; const l = Math.hypot(x, y); if (l > R) { x *= R / l; y *= R / l; } target = { x, y }; });
+addEventListener('pointerdown', (e) => { if (state.mode === 'play' && e.pointerType !== 'mouse') dispatchEvent(new PointerEvent('pointermove', e)); });
+addEventListener('keydown', (e) => {
+  if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) e.preventDefault();
+  if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') { if (state.mode === 'play') setPause(!state.paused); return; }
+  keys.add(e.key.toLowerCase());
+});
+addEventListener('keyup', (e) => keys.delete(e.key.toLowerCase()));
+function setPause(p) { state.paused = p; $('ovPause').hidden = !p; if (p) $('resume').focus(); last = performance.now(); }
+$('pause').onclick = () => state.mode === 'play' && setPause(!state.paused);
+$('resume').onclick = () => setPause(false);
+document.addEventListener('visibilitychange', () => { if (document.hidden && state.mode === 'play') setPause(true); });
+function launch() {
+  try { ac ??= new (window.AudioContext || window.webkitAudioContext)(); ac.resume(); } catch {}
+  reset('play'); $('ovStart').hidden = true; $('ovEnd').hidden = true; banner(STAGES[0].title, STAGES[0].fact); tone(220, 880, .6, 'triangle', .08);
+}
+$('go').onclick = launch;
+
+function gameOver() {
+  state.mode = 'over'; tone(440, 60, 1.2, 'sawtooth', .06);
+  const sc = Math.floor(state.score), isBest = sc > state.best; if (isBest) { state.best = sc; try { localStorage.setItem('photon-dash-best', sc); } catch {} }
+  const st = STAGES[state.stage], form = { photon: 'photon', electron: 'electron', token: 'token' }[st.form];
+  $('endCard').innerHTML = `<div class="k">Run over · ${form} ran out of energy</div>
+    <div class="big">${sc.toLocaleString('en-US')}</div>
+    <p>${isBest ? 'New best on this device.' : `Best on this device: <b>${state.best.toLocaleString('en-US')}</b>.`} You reached <b>${st.title}</b>${state.lap ? ` on lap ${state.lap + 1}` : ''}.</p>
+    <div class="stats"><div>Distance<b>${Math.floor(state.d / 10).toLocaleString('en-US')} m</b></div><div>Pickups<b>${state.picks}</b></div><div>Rings<b>${state.rings}</b></div><div>Tokens<b>${state.tokens}</b></div><div>Hits<b>${state.hits}</b></div></div>
+    <p style="color:var(--dim)">${st.fact}</p>
+    <div class="btns"><button class="btn" id="again">Fly again</button><span class="hint">or press Enter</span></div>`;
+  $('ovEnd').hidden = false; $('again').onclick = launch; $('again').focus();
+}
+addEventListener('keydown', (e) => { if (e.key === 'Enter' && state.mode === 'over') launch(); });
+
+// ---------- loop ----------
+const bgA = new THREE.Color(), fogA = new THREE.Color();
+function frame(t) {
+  requestAnimationFrame(frame);
+  let dt = Math.min(.05, (t - last) / 1000); last = t;
+  if (state.paused || state.mode === 'over') dt = 0;
+  const play = state.mode === 'play';
+  // steering: pointer target, keys nudge it; the attract demo flies itself
+  if (play) {
+    const kx = (keys.has('arrowright') || keys.has('d')) - (keys.has('arrowleft') || keys.has('a')), ky = (keys.has('arrowup') || keys.has('w')) - (keys.has('arrowdown') || keys.has('s'));
+    if (kx || ky) { target.x += kx * 11 * dt; target.y += ky * 11 * dt; const l = Math.hypot(target.x, target.y); if (l > R) { target.x *= R / l; target.y *= R / l; } }
+  } else { target = { x: Math.sin(t / 1300) * 3.2, y: Math.cos(t / 1700) * 2.2 }; }
+  pos.x = lerp(pos.x, target.x, 1 - Math.exp(-dt * 9)); pos.y = lerp(pos.y, target.y, 1 - Math.exp(-dt * 9));
+  player.position.set(pos.x, pos.y, 0); core.scale.setScalar(1 + .12 * Math.sin(t / 90));
+  hist.unshift([pos.x, pos.y]); if (hist.length > 60) hist.pop();
+  trail.forEach((s, i) => { const h = hist[Math.min(hist.length - 1, i * 2)] || [pos.x, pos.y]; s.position.set(h[0], h[1], i * .55 + .4); });
+
+  // advance
+  const lap = lapAt(state.d);
+  state.speed = Math.min(78, 30 + state.stage * 3 + lap * 9 + state.d * .002);
+  const dz = state.speed * dt; state.d += dz;
+  const si = stageAt(state.d);
+  if (si !== state.stage || lap !== state.lap) { state.lap = lap; if (play) state.score += 250; setStage(si, !play); if (si === 0 && lap > 0 && play) banner(`Lap ${lap + 1} · next sunrise`, 'Faster now. The sun is up again, and the queue is full.'); }
+  const st = STAGES[si], p = (state.d % PHASE_LEN) / PHASE_LEN;
+  if (play) { state.energy -= dt * (1.1 + lap * .4); state.score += dz * .2; }
+
+  // look: blend background toward the stage colors
+  bgA.set(st.bg); scene.background.lerp(bgA, 1 - Math.exp(-dt * 2)); fogA.set(st.fog[0]); scene.fog.color.lerp(fogA, 1 - Math.exp(-dt * 2));
+  scene.fog.near = lerp(scene.fog.near, st.fog[1], .05); scene.fog.far = lerp(scene.fog.far, st.fog[2], .05);
+  sun.visible = si === 0; sun.material.opacity = .9 * (1 - p);
+  earth.visible = si === 0; earth.position.set(0, -78, lerp(-520, -40, p * p)); earth.rotation.y = t / 9000;
+  array.visible = si === 1 && p > .7; array.position.set(0, 0, lerp(-SPAWN, 1, clamp((p - .72) / .28))); array.rotation.z = .3;
+  bloom.strength = si === 1 ? .3 : si === 0 ? .55 : .7;
+
+  // particles
+  const a = dust.geometry.attributes.position.array, sp = si === 0 ? 1.6 : 1;
+  for (let i = 0; i < DUST; i++) { a[i * 3 + 2] += dz * sp; if (a[i * 3 + 2] > 10) a[i * 3 + 2] -= 240; }
+  dust.geometry.attributes.position.needsUpdate = true;
+
+  // spawn ahead, at the stage the player will be in when the item arrives
+  const ahead = STAGES[stageAt(state.d + SPAWN)], gap = Math.max(12, 30 - state.stage * 2 - lap * 4);
+  while (next.hit < state.d + SPAWN) { if (!(ahead === STAGES[1] && ((state.d + SPAWN) % PHASE_LEN) / PHASE_LEN > .7)) spawnHit(ahead, -(next.hit - state.d)); next.hit += rand(gap * .6, gap * 1.4); }
+  while (next.gain < state.d + SPAWN) { spawnGains(ahead, -(next.gain - state.d)); next.gain += ahead.gain === 'token' ? rand(26, 40) : rand(34, 52); }
+  while (next.ring < state.d + SPAWN) { if (ahead.rings) spawnRing(ahead, -(next.ring - state.d)); next.ring += rand(110, 170); }
+  while (next.decor < state.d + SPAWN) { if (ahead.decor) spawnDecor(ahead, -(next.decor - state.d)); next.decor += ahead.decor === 'racks' ? 3.2 : ahead.decor === 'frames' ? 9 : 7; }
+
+  // move items, collide as they cross the player's plane
+  for (let i = items.length - 1; i >= 0; i--) {
+    const it = items[i], z0 = it.z; it.z += dz; it.obj.position.z = it.z;
+    if (it.spin) { it.obj.rotation.z += it.spin * dt; it.obj.rotation.y += it.spin * dt * .6; }
+    if (play && z0 < 0 && it.z >= 0 && !it.used) {
+      let d;
+      if (it.bar) { const ang = it.obj.rotation.z, nx = -Math.sin(ang), ny = Math.cos(ang); d = Math.abs((pos.x - it.x) * nx + (pos.y - it.y) * ny); }
+      else if (it.column) d = Math.abs(pos.x - it.x); else d = Math.hypot(pos.x - it.x, pos.y - it.y);
+      if (it.kind === 'hit' && d < it.r + .35) { it.used = true; state.energy -= it.dmg; state.hits++; shake = .6; flash('#ff2a3a', .35); tone(160, 50, .35, 'square', .06); it.obj.visible = false; }
+      else if (it.kind === 'gain' && d < it.r + .35) {
+        it.used = true; it.obj.visible = false; state.energy = Math.min(100, state.energy + it.val); state.picks++; state.score += 25;
+        if (it.word) { state.tokens++; pendingTokens = Math.max(0, pendingTokens - 1); state.score += 60; tone(660, 1320, .18, 'triangle', .06); } else tone(880 + state.picks % 5 * 110, 1760, .09, 'sine', .05);
+      } else if (it.kind === 'gain' && it.word) pendingTokens = Math.max(0, pendingTokens - 1);
+      else if (it.kind === 'ring' && d < it.r) { it.used = true; state.rings++; state.score += 150; state.energy = Math.min(100, state.energy + 10); tone(523, 1046, .25, 'triangle', .07); tone(659, 1318, .3, 'sine', .05); it.obj.children[0].material.color.set(0xffffff); }
+    }
+    if (it.z > 12) { scene.remove(it.obj); items.splice(i, 1); }
+  }
+
+  // camera chases the player, with a little shake on hits
+  shake = Math.max(0, shake - dt * 1.6);
+  camera.position.set(pos.x * .35 + (Math.random() - .5) * shake, pos.y * .35 + 1.1 + (Math.random() - .5) * shake, 8.5);
+  camera.lookAt(pos.x * .5, pos.y * .5, -30);
+  composer.render();
+  if (play) { hud(); if (state.energy <= 0) { state.energy = 0; hud(); gameOver(); } }
+}
+document.fonts.ready.then(() => { reset('attract'); requestAnimationFrame(frame); });
+</script>

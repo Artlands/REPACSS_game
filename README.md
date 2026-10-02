@@ -60,6 +60,13 @@ To scrub interactively, open `index.html` through any static server (for example
 
 To tune the music, change the three numbers at the top of `music.py` (`BED_DB`, `DUCK_DB`, `SWELL_DB`), then rerun step 3.
 
+## Game: Photon Dash (3D)
+
+`game3d/index.html` is a 3D runner built with three.js (loaded from a CDN). You ride one photon from the Sun, through the West Texas sky and into the 350 kW array, then down the power bus as an electron, through the REPACSS cluster, and out of the tensor cores as tokens. Each stage opens with a real facility fact.
+
+- Play: open `game3d/index.html` in a browser (it needs an internet connection for three.js and fonts).
+- Practice a stage: add `#stage1` … `#stage5` to the URL.
+
 ## Project layout
 
 | Path | Contents |
