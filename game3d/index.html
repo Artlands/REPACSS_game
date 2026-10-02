@@ -103,6 +103,11 @@
   .vbar .btn { font-size: 17px; padding: 11px 18px; }
   .vprog { position: absolute; left: 0; bottom: 0; height: 4px; background: linear-gradient(90deg, var(--sun), var(--elec), var(--tok)); width: 0; }
   .linkbtn { background: none; border: 0; padding: 0; color: var(--elec); font: 600 15px/1.4 var(--body); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+  :is(#ovStart, #ovEnd) .lb li.none { grid-template-columns: 1fr; padding: 4px 0; font-size: 16px; }
+  .logo { display: block; height: auto; }
+  .logo-start { width: clamp(200px, 26vw, 340px); margin-bottom: 4px; }
+  .logo-end { width: 180px; }
+  .logo-hud { position: absolute; left: 16px; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); width: clamp(96px, 10vw, 150px); opacity: .55; pointer-events: none; }
   #fs { position: absolute; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 5; width: 44px; height: 44px; display: grid; place-items: center; }
   #fs svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
   @media (prefers-reduced-motion: reduce) { .bar i, .banner { transition: none; } }
@@ -122,6 +127,7 @@
       </div>
     </div>
     <div></div>
+    <img class="logo logo-hud" src="repacss-white.svg" alt="">
     <div class="bottom">
       <div class="sent" id="sent" aria-live="polite"></div>
       <div class="energy"><span class="k" id="formK">Photon energy</span><div class="bar"><i id="bar"></i></div><span class="v" id="energy">100</span></div>
@@ -131,6 +137,7 @@
 
   <div class="ov" id="ovStart">
     <div class="ovrow"><div class="card">
+      <img class="logo logo-start" src="repacss-red.svg" alt="REPACSS">
       <div class="k">A REPACSS 3D game · Texas Tech University</div>
       <h1>Photon Dash</h1>
       <p>Every AI token starts as sunlight. Ride one photon all the way: off the Sun, through the West Texas sky, into the REPACSS solar array, down the power bus and into the cluster, until it comes out as a token.</p>
@@ -441,6 +448,41 @@ const LKEY = 'photon-dash-top10', STAGE_SHORT = ['Sun', 'Sky', 'Power bus', 'Clu
 const loadLocal = () => { try { const v = JSON.parse(localStorage.getItem(LKEY)); return Array.isArray(v) ? v : []; } catch { return []; } };
 board.rows = loadLocal();
 const qualifies = (sc) => sc > 0 && (board.rows.length < 10 || sc > (board.rows.at(-1)?.score ?? 0));
+// ---------- cartoon avatars: one stable, random-looking character per pilot (account + pilot name) ----------
+const _cartoons = new Map();
+function cartoon(seed) {
+  if (_cartoons.has(seed)) return _cartoons.get(seed);
+  let h = 2166136261; for (const ch of seed) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+  const r = () => ((h = Math.imul(h ^ (h >>> 15), 2246822507) ^ Math.imul(h ^ (h >>> 13), 3266489909)) >>> 0) / 4294967296;
+  const pick = (a) => a[Math.floor(r() * a.length)];
+  const kind = pick(['photon', 'electron', 'robot', 'token', 'sun']);
+  const bg = pick(['#1d2b52', '#2a1f4a', '#123a3a', '#3a2412', '#1b3247', '#2f1b3a']);
+  const body = { photon: pick(['#ffd27a', '#ffb53c', '#ffe08a']), electron: pick(['#3fd8ff', '#7fe8ff', '#5ab8ff']), robot: pick(['#b8c4d8', '#9fb0c8', '#d6dde8']),
+    token: pick(['#b18cff', '#c9a8ff', '#9a7bff']), sun: pick(['#ffb53c', '#ff9a3c', '#ffc94d']) }[kind];
+  const ink = '#1a1426', o = [];
+  o.push(`<circle cx="32" cy="32" r="32" fill="${bg}"/>`);
+  if (kind === 'sun') for (let k = 0; k < 10; k++) { const a = k * Math.PI / 5; o.push(`<line x1="${32 + Math.cos(a) * 19}" y1="${34 + Math.sin(a) * 19}" x2="${32 + Math.cos(a) * 27}" y2="${34 + Math.sin(a) * 27}" stroke="${body}" stroke-width="4" stroke-linecap="round"/>`); }
+  if (kind === 'electron') o.push(`<ellipse cx="32" cy="34" rx="28" ry="9" fill="none" stroke="${body}" stroke-width="2" opacity=".7" transform="rotate(${pick([-25, 25, 0])} 32 34)"/>`);
+  if (kind === 'robot') o.push(`<line x1="32" y1="14" x2="32" y2="6" stroke="${body}" stroke-width="3"/><circle cx="32" cy="6" r="3.5" fill="${pick(['#ff5d6c', '#7dffa5', '#3fd8ff'])}"/><rect x="13" y="16" width="38" height="36" rx="9" fill="${body}"/>`);
+  else if (kind === 'token') o.push(`<rect x="14" y="16" width="36" height="36" rx="6" fill="${body}" transform="rotate(${pick([-8, 0, 8])} 32 34)"/>`);
+  else o.push(`<circle cx="32" cy="34" r="${kind === 'sun' ? 16 : 19}" fill="${body}"/>`);
+  if (kind === 'photon') o.push(`<path d="M44 14 l5 -6 M48 20 l7 -3" stroke="${body}" stroke-width="3" stroke-linecap="round"/>`);
+  const eyes = pick(['dots', 'big', 'happy', 'shades', 'wink']), ey = 31;
+  if (eyes === 'dots') o.push(`<circle cx="25" cy="${ey}" r="2.6" fill="${ink}"/><circle cx="39" cy="${ey}" r="2.6" fill="${ink}"/>`);
+  if (eyes === 'big') o.push(`<circle cx="25" cy="${ey}" r="5" fill="#fff"/><circle cx="39" cy="${ey}" r="5" fill="#fff"/><circle cx="26" cy="${ey + 1}" r="2.6" fill="${ink}"/><circle cx="40" cy="${ey + 1}" r="2.6" fill="${ink}"/><circle cx="27" cy="${ey}" r=".9" fill="#fff"/><circle cx="41" cy="${ey}" r=".9" fill="#fff"/>`);
+  if (eyes === 'happy') o.push(`<path d="M21 ${ey + 1} q4 -5 8 0 M35 ${ey + 1} q4 -5 8 0" fill="none" stroke="${ink}" stroke-width="2.4" stroke-linecap="round"/>`);
+  if (eyes === 'shades') o.push(`<rect x="18" y="${ey - 4}" width="12" height="7" rx="3" fill="${ink}"/><rect x="34" y="${ey - 4}" width="12" height="7" rx="3" fill="${ink}"/><line x1="30" y1="${ey - 1}" x2="34" y2="${ey - 1}" stroke="${ink}" stroke-width="2"/>`);
+  if (eyes === 'wink') o.push(`<circle cx="25" cy="${ey}" r="2.8" fill="${ink}"/><path d="M35 ${ey} h8" stroke="${ink}" stroke-width="2.4" stroke-linecap="round"/>`);
+  const my = 41, mouth = pick(['smile', 'open', 'grin', 'o', 'tongue']);
+  if (mouth === 'smile') o.push(`<path d="M25 ${my} q7 6 14 0" fill="none" stroke="${ink}" stroke-width="2.4" stroke-linecap="round"/>`);
+  if (mouth === 'open') o.push(`<path d="M25 ${my - 1} q7 9 14 0 z" fill="${ink}"/>`);
+  if (mouth === 'grin') o.push(`<rect x="24" y="${my - 2}" width="16" height="6" rx="3" fill="#fff" stroke="${ink}" stroke-width="1.6"/>`);
+  if (mouth === 'o') o.push(`<circle cx="32" cy="${my + 1}" r="3" fill="${ink}"/>`);
+  if (mouth === 'tongue') o.push(`<path d="M25 ${my - 1} q7 7 14 0" fill="${ink}"/><path d="M30 ${my + 2} q2 4 4 0" fill="#ff7a8a"/>`);
+  if (r() < .6 && kind !== 'robot') o.push(`<circle cx="20" cy="${my - 2}" r="2.6" fill="#ff7a8a" opacity=".55"/><circle cx="44" cy="${my - 2}" r="2.6" fill="#ff7a8a" opacity=".55"/>`);
+  const url = 'data:image/svg+xml,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">${o.join('')}</svg>`);
+  _cartoons.set(seed, url); return url;
+}
 async function renderBoards() {
   const ids = board.shared ? [...new Set(board.rows.map(r => r.uid))] : [];
   const ps = board.shared && ids.length ? await board.user.profiles(ids) : {};
@@ -456,7 +498,7 @@ async function renderBoards() {
       const who = r.name || (board.shared ? ps[r.uid]?.name : '') || 'A pilot';
       nm.textContent = who + (mine ? ' (you)' : '');
       const sm = document.createElement('small'); sm.textContent = `${STAGE_SHORT[r.stage] ?? 'Sun'}${r.lap ? ` · lap ${r.lap + 1}` : ''} · ${r.tokens ?? 0} tokens`; nm.appendChild(sm);
-      if (board.shared) img.src = ps[r.id]?.avatarUrl ?? ''; else { img.style.background = `hsl(${[...who].reduce((a, c) => a + c.charCodeAt(0), 0) * 37 % 360} 55% 45%)`; }
+      img.src = cartoon((r.uid || '') + '|' + pilotKey(r.name || who));
       const sc = document.createElement('span'); sc.className = 'sc'; sc.textContent = Math.floor(r.score).toLocaleString('en-US');
       li.append(rk, img, nm, sc); ol.appendChild(li);
     });
@@ -499,7 +541,7 @@ function gameOver(early = false) {
   state.mode = 'over'; tone(440, 60, 1.2, 'sawtooth', .06);
   const sc = Math.floor(state.score), isBest = sc > state.best; if (isBest) { state.best = sc; try { localStorage.setItem('photon-dash-best', sc); } catch {} }
   const st = STAGES[state.stage], form = { photon: 'photon', electron: 'electron', token: 'token' }[st.form];
-  $('endCard').innerHTML = `<div class="k">Run over · ${early ? 'you ended the run' : `${form} ran out of energy`}</div>
+  $('endCard').innerHTML = `<img class="logo logo-end" src="repacss-red.svg" alt="REPACSS"><div class="k">Run over · ${early ? 'you ended the run' : `${form} ran out of energy`}</div>
     <div class="big">${sc.toLocaleString('en-US')}</div>
     <p>${isBest ? 'New best on this device.' : `Best on this device: <b>${state.best.toLocaleString('en-US')}</b>.`} You reached <b>${st.title}</b>${state.lap ? ` on lap ${state.lap + 1}` : ''}.</p>
     <div class="stats"><div>Distance<b>${Math.floor(state.d / 10).toLocaleString('en-US')} m</b></div><div>Pickups<b>${state.picks}</b></div><div>Rings<b>${state.rings}</b></div><div>Tokens<b>${state.tokens}</b></div><div>Hits<b>${state.hits}</b></div></div>
