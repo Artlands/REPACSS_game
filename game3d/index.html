@@ -11,6 +11,7 @@
     --display: "Saira Condensed", "Arial Narrow", sans-serif; --body: Figtree, "Avenir Next", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
   }
   [hidden] { display: none !important; }
+  .card, .brief, .ovrow { box-sizing: border-box; }   /* padding stays inside the width caps */
   html, body { height: 100%; margin: 0; background: var(--ground); color: var(--ink); overflow: hidden; }
   body { font: 15px/1.45 var(--body); }
   #app { position: fixed; inset: 0; touch-action: none; user-select: none; -webkit-user-select: none; }
@@ -38,7 +39,7 @@
   .banner .t { font: 700 clamp(30px, 5vw, 58px)/1 var(--display); text-shadow: 0 3px 24px rgba(0,0,0,.7); }
   .banner .f { margin-top: 10px; font: 500 clamp(15px, 1.8vw, 19px)/1.45 var(--body); color: #dfe6f6; text-shadow: 0 1px 12px rgba(0,0,0,.9); text-wrap: balance; }
   .flash { position: absolute; inset: 0; pointer-events: none; opacity: 0; }
-  .ov { position: absolute; inset: 0; display: grid; place-items: center; padding: 16px; background: radial-gradient(ellipse at 50% 40%, rgba(3,5,11,.35), rgba(3,5,11,.85)); overflow-y: auto; }
+  .ov { touch-action: pan-y; position: absolute; inset: 0; display: grid; place-items: center; padding: 16px; background: radial-gradient(ellipse at 50% 40%, rgba(3,5,11,.35), rgba(3,5,11,.85)); overflow-y: auto; }
   .card { width: min(640px, 100%); background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: clamp(18px, 4vw, 32px); display: grid; gap: 14px; backdrop-filter: blur(10px); }
   .card .k { font: 600 12px/1 var(--body); letter-spacing: .2em; text-transform: uppercase; color: var(--dim); }
   .card h1 { margin: 0; font: 700 clamp(52px, 10vw, 92px)/.9 var(--display); letter-spacing: .01em;
@@ -75,13 +76,13 @@
   /* start and end screens share one layout: larger cards and type, scoreboard pinned right */
   /* the intro card fills the screen; the scoreboard is pinned as a full-height column on the right */
   :is(#ovStart, #ovEnd) { place-items: stretch; }
-  :is(#ovStart, #ovEnd) .ovrow { display: grid; grid-template-columns: minmax(0, 1fr) clamp(340px, 27vw, 480px); gap: 22px; width: 100%; min-height: 100%; align-items: stretch; }
+  :is(#ovStart, #ovEnd) .ovrow { display: grid; grid-template-columns: minmax(0, 1fr) clamp(320px, 24vw, 460px); gap: 22px; width: 100%; min-height: 100%; align-items: stretch; }
   :is(#ovStart, #ovEnd) .ovrow > .card { padding: clamp(22px, 4vw, 48px); gap: 18px; border-radius: 22px; width: auto; }
   :is(#ovStart, #ovEnd) .ovrow > .card:first-child { align-self: center; justify-self: center; width: 100%; max-width: 920px; }
   :is(#ovStart, #ovEnd) .ovrow > .board { align-content: start; overflow-y: auto; }
   :is(#ovStart, #ovEnd) .card p { max-width: 75ch; }
   @media (max-width: 900px) { :is(#ovStart, #ovEnd) .ovrow { grid-template-columns: 1fr; } :is(#ovStart, #ovEnd) .ovrow > .board { overflow: visible; } }
-  :is(#ovStart, #ovEnd) .card h1 { font-size: clamp(64px, 12vw, 128px); }
+  :is(#ovStart, #ovEnd) .card h1 { font-size: clamp(64px, min(12vw, 15vh), 144px); }
   :is(#ovStart, #ovEnd) .card p, :is(#ovStart, #ovEnd) .card ol { font-size: clamp(16px, 1.4vw, 19px); }
   :is(#ovStart, #ovEnd) .card .k { font-size: 13px; }
   :is(#ovStart, #ovEnd) .save input { font-size: 19px; padding: 14px 16px; }
@@ -104,7 +105,6 @@
   .vframe { position: relative; aspect-ratio: 16 / 9; border-radius: 18px; overflow: hidden; background: #000; border: 1px solid rgba(255,255,255,.14);
     box-shadow: 0 30px 90px rgba(0,0,0,.65), 0 0 60px rgba(255,181,60,.12); }
   .vframe video { display: block; width: 100%; height: 100%; object-fit: cover; transition: filter .6s, transform .6s; }
-  .vframe video::cue { font: 500 clamp(14px, 1.9vw, 22px)/1.35 var(--body); background: rgba(0,0,0,.6); }
   .vframe.done video { filter: brightness(.35) blur(2px); transform: scale(1.03); }
   .count { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; font: 700 clamp(90px, 16vw, 200px)/1 var(--display);
     color: #fff; text-shadow: 0 0 40px rgba(255,210,122,.8); }
@@ -114,13 +114,22 @@
   .vprog { height: 5px; border-radius: 3px; background: rgba(255,255,255,.1); overflow: hidden; }
   .vprog i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--sun), var(--elec), var(--tok)); }
   .brief-bot .hint { text-align: center; }
+  .vcap { min-height: 2.9em; text-align: center; font: 500 clamp(15px, 1.7vw, 20px)/1.45 var(--body); color: #eef2fb; text-wrap: balance; }
   @media (prefers-reduced-motion: reduce) { .count i { animation: none; } .vframe video { transition: none; } }
   .linkbtn { background: none; border: 0; padding: 0; color: var(--elec); font: 600 15px/1.4 var(--body); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
   :is(#ovStart, #ovEnd) .lb li.none { grid-template-columns: 1fr; padding: 4px 0; font-size: 16px; }
   .logo { display: block; height: auto; }
-  .logo-start { width: clamp(200px, 26vw, 340px); margin: 0 auto 4px; }
+  .logo-start { width: clamp(200px, min(26vw, 32vh), 340px); margin: 0 auto; }
   .logo-start + .k { text-align: center; }
   #ovStart .card h1 { text-align: center; }
+  #ovStart .ovrow > .card:first-child { max-width: 1100px; gap: 16px; padding-block: clamp(20px, 3vh, 40px); }
+  :is(#ovStart, #ovEnd) .card { background: rgba(12,18,32,.94); }   /* opaque enough that stars don't flicker through the text */
+  #ovStart .card p { font-size: clamp(17px, 1.5vw, 21px); }
+  #ovStart .stg { padding: 18px 10px 16px; gap: 8px; }
+  #ovStart .stg .fig { width: 76px; height: 76px; }
+  #ovStart .stg .nm { font-size: 22px; }
+  #ovStart .stg .role { font-size: 12px; }
+  #ovStart .stg .do { font-size: 14px; }
   .stages { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
   .stg { position: relative; display: grid; justify-items: center; align-content: start; gap: 6px; text-align: center; padding: 14px 8px 12px; border-radius: 14px;
     background: linear-gradient(180deg, color-mix(in srgb, var(--c) 16%, transparent), rgba(255,255,255,.03)); border: 1px solid color-mix(in srgb, var(--c) 35%, transparent); }
@@ -137,6 +146,9 @@
   .logo-end { width: 180px; }
   .logo-hud { position: absolute; left: 16px; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); width: clamp(96px, 10vw, 150px); opacity: .55; pointer-events: none; }
   #fs { position: absolute; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 5; width: 44px; height: 44px; display: grid; place-items: center; }
+  #app:not(.playing) .hud { visibility: hidden; }
+  #app:not(.playing) #fs { right: auto; left: 16px; bottom: auto; top: calc(16px + env(safe-area-inset-top, 0px)); }
+  @media (max-width: 700px) { .logo-hud { display: none; } #app:not(.playing) #fs { display: none; } .energy { width: calc(100% - 60px); margin-right: 60px; } }
   #fs svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
   @media (prefers-reduced-motion: reduce) { .bar i, .banner { transition: none; } }
 </style>
@@ -188,7 +200,7 @@
       <button class="btn" id="vplay" hidden style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:24px;padding:18px 32px">Play the briefing</button>
       <div class="count" id="count" aria-live="assertive"></div>
     </div>
-    <div class="brief-bot"><div class="vprog"><i id="vprog"></i></div><div class="hint">Your run launches when the briefing ends</div></div>
+    <div class="brief-bot"><div class="vcap" id="vcap" aria-live="polite"></div><div class="vprog"><i id="vprog"></i></div><div class="hint">Your run launches when the briefing ends</div></div>
   </div></div>
   <div class="ov" id="ovPause" hidden><div class="card"><div class="k">Paused</div><p>Your score so far still counts if you end the run now.</p><div class="btns"><button class="btn" id="resume">Resume</button><button class="btn" id="endRun" style="background:transparent;color:var(--alarm);border:1px solid var(--alarm)">End run</button><span class="hint">P resumes · E ends the run</span></div></div></div>
   <button class="ib" id="fs" aria-label="Full screen" title="Full screen (F)" hidden><svg viewBox="0 0 24 24"><path id="fsIcon" d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
@@ -348,6 +360,7 @@ try { state.best = +localStorage.getItem('photon-dash-best') || 0; } catch {}
 const stageAt = (d) => Math.floor(d / PHASE_LEN) % STAGES.length, lapAt = (d) => Math.floor(d / PHASE_LEN / STAGES.length);
 
 function reset(mode) {
+  $('app').classList.toggle('playing', mode === 'play');
   for (const it of items) scene.remove(it.obj); items.length = 0;
   Object.assign(state, { player: state.player, mode, d: 0, speed: 30, energy: 100, score: 0, stage: 0, lap: 0, tokens: 0, rings: 0, picks: 0, hits: 0, paused: false });
   // practice: index.html#stage3 starts at stage 3
@@ -433,7 +446,7 @@ $('startForm').onsubmit = (e) => {
   state.player = name; try { localStorage.setItem('photon-dash-name', name); } catch {}
   playIntro(launch);   // the intro is part of every launch from the start screen; it can't be skipped
 };
-// ---------- intro video: REPACSS in 45 seconds (first launch on this browser, or "Watch the intro") ----------
+// ---------- intro video: a 45-second REPACSS mission briefing before every launch from the start screen ----------
 const INTRO_CUES = [
   [1.0, 5.88, "Every answer an AI gives you is built from tokens, and every token starts as energy."],
   [6.47, 12.11, "At Texas Tech University, a supercomputer called REPACSS takes much of its energy straight from the sun."],
@@ -443,9 +456,11 @@ const INTRO_CUES = [
   [30.65, 37.05, "There, thousands of processor cores and powerful GPUs turn electricity into science, and into tokens."],
   [37.65, 44.17, "In Photon Dash, you are that photon. Fly from the sun to a token, and see how far your energy takes you."],
 ];   // from build/captions_game_intro.srt (narration.py game_intro)
-{ // captions as a text track built in the page (artifacts don't serve .vtt files)
-  const tr = $('introV').addTextTrack('captions', 'English', 'en'); tr.mode = 'showing';
+{ // captions: a hidden text track (artifacts don't serve .vtt files) drives a line under the frame,
+  // so they never sit on top of the on-screen labels baked into the footage
+  const tr = $('introV').addTextTrack('captions', 'English', 'en'); tr.mode = 'hidden';
   for (const [a, b, t] of INTRO_CUES) tr.addCue(new VTTCue(a, b, t));
+  tr.addEventListener('cuechange', () => { $('vcap').textContent = tr.activeCues?.[0]?.text ?? ''; });
 }
 // ---------- start card: the five stages, the player's role in each, what to dodge and what to grab ----------
 {
@@ -483,7 +498,7 @@ let introDone = null;
 function playIntro(then) {
   const v = $('introV'); introDone = then;
   $('briefK').textContent = `Mission briefing · Pilot ${state.player}`;
-  $('vframe').classList.remove('done'); $('count').replaceChildren(); $('vprog').style.width = '0';
+  $('vframe').classList.remove('done'); $('count').replaceChildren(); $('vcap').textContent = ''; $('vprog').style.width = '0';
   $('ovStart').hidden = true; $('ovIntro').hidden = false; v.currentTime = 0;
   const go = () => v.play().then(() => { $('vplay').hidden = true; }).catch(() => { $('vplay').hidden = false; $('vplay').focus(); });   // autoplay refused: ask for one tap
   $('vplay').onclick = go; go();
@@ -512,7 +527,6 @@ $('introV').addEventListener('timeupdate', (e) => {
 });
 
 // ---------- scoreboard: one shared top 10 on claude.ai, this device otherwise ----------
-// Shared mode keeps one document per player at scores/<their id> holding their best run; everyone reads, each writes only their own.
 // Shared mode: one document per claude.ai account at scores/<their id> = { pilots: { <name key>: best run } }, so every pilot
 // name gets its own entry; the board flattens all pilots from all accounts and ranks them. (A pre-pilots document that is
 // itself a single run counts as one unnamed pilot.)
@@ -597,6 +611,7 @@ async function recordScore(run) {
   const note = $('saveNote');
   if (board.shared) {
     if (!board.me) { note.textContent = 'Sign in to claude.ai to put your runs on the board.'; return; }
+    try { const d = await board.db.doc('scores/' + board.me).get(); board.mine = d.exists ? pilotsOf(d.data()) : {}; } catch { note.textContent = 'Couldn\'t reach the scoreboard. Try again after your next run.'; return; }   // never write a stale map: it would drop this account's other pilots
     const key = pilotKey(run.name), prev = board.mine[key];
     if (prev && run.score <= prev.score) { note.textContent = `${run.name}'s best on the board is ${prev.score.toLocaleString('en-US')}. Beat it to move up.`; return; }
     // keep at most 30 pilots per account: drop the lowest if this is a new one
@@ -606,14 +621,14 @@ async function recordScore(run) {
     catch (e) { note.textContent = e?.code === 'invalid_argument' ? 'This page is view-only for you, so your score can\'t be saved. Ask the owner for Contributor access.' : e?.code === 'quota_exceeded' ? 'The scoreboard is full right now.' : 'Couldn\'t reach the scoreboard. Try again after your next run.'; }
     return;
   }
-  if (!qualifies(run.score)) { note.textContent = `Not quite top 10 on this device. The board starts at ${Math.floor(board.rows.at(-1).score).toLocaleString('en-US')}.`; return; }
+  if (!qualifies(run.score)) { note.textContent = board.rows.length < 10 ? 'Score some points to get on the board.' : `Not quite top 10 on this device. The board starts at ${Math.floor(board.rows.at(-1).score).toLocaleString('en-US')}.`; return; }
   const at = run.at; board.rows = [...board.rows, run].sort((a, b) => b.score - a.score).slice(0, 10); board.justSaved = at;
   try { localStorage.setItem(LKEY, JSON.stringify(board.rows)); } catch {}
   note.textContent = `Saved. ${run.name} is #${board.rows.findIndex(r => r.at === at) + 1} on this device.`; renderBoards();
 }
 
 function gameOver(early = false) {
-  state.mode = 'over'; tone(440, 60, 1.2, 'sawtooth', .06);
+  state.mode = 'over'; $('app').classList.remove('playing'); tone(440, 60, 1.2, 'sawtooth', .06);
   const sc = Math.floor(state.score), isBest = sc > state.best; if (isBest) { state.best = sc; try { localStorage.setItem('photon-dash-best', sc); } catch {} }
   const st = STAGES[state.stage], form = { photon: 'photon', electron: 'electron', token: 'token' }[st.form];
   $('endCard').innerHTML = `<img class="logo logo-end" src="repacss-red.svg" alt="REPACSS"><div class="k">Run over · ${early ? 'you ended the run' : `${form} ran out of energy`}</div>
