@@ -219,6 +219,7 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
 const $ = (id) => document.getElementById(id);
+const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);   // pilot names are user text
 const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x)), lerp = (a, b, t) => a + (b - a) * t, rand = (a, b) => a + Math.random() * (b - a);
 const R = 5.2, SPAWN = 170, PHASE_LEN = 1100;
 
@@ -248,6 +249,15 @@ addEventListener('resize', resize); resize();
 let _glow; const glowTex = () => _glow ??= (() => { const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d'), r = g.createRadialGradient(64, 64, 0, 64, 64, 64);
   r.addColorStop(0, '#fff'); r.addColorStop(.25, 'rgba(255,255,255,.8)'); r.addColorStop(.6, 'rgba(255,255,255,.15)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, 128, 128); return new THREE.CanvasTexture(c); })();
 const glow = (color, size, op = 1) => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex(), color, transparent: true, opacity: op, blending: THREE.AdditiveBlending, depthWrite: false })); s.scale.setScalar(size); return s; };
+const _labelTex = new Map();
+function labelTex(text, color) {
+  const key = text + '|' + color; if (_labelTex.has(key)) return _labelTex.get(key);
+  const c = document.createElement('canvas'), g = c.getContext('2d'), f = '700 64px "Saira Condensed", "Arial Narrow", sans-serif';
+  g.font = f; const w = Math.ceil(g.measureText(text).width) + 40; c.width = w; c.height = 96; g.font = f; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.shadowColor = 'rgba(0,0,0,.8)'; g.shadowBlur = 12; g.fillStyle = color; g.fillText(text, w / 2, 50);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; const v = { tex: t, aspect: w / 96 };
+  _labelTex.set(key, v); return v;
+}
 function label(text, color = '#fff', h = .8) {
   const c = document.createElement('canvas'), g = c.getContext('2d'), f = '700 64px "Saira Condensed", "Arial Narrow", sans-serif';
   g.font = f; const w = Math.ceil(g.measureText(text).width) + 40; c.width = w; c.height = 96; g.font = f; g.textAlign = 'center'; g.textBaseline = 'middle';
@@ -323,14 +333,22 @@ const GAIN = { spark: 0xffd27a, beam: 0xfff1a8, charge: 0x3fd8ff, packet: 0xb18c
 function spawnGains(st, z) {
   const [x0, y0] = inDisc(R * .75), [x1, y1] = inDisc(R * .75);
   if (st.gain === 'token') {
-    const w = SENTENCE[(state.tokens + pendingTokens) % SENTENCE.length]; pendingTokens++;
-    const s = label(w, '#e3d6ff', 1.1); s.add(glow(0xb18cff, 2.6, .7)); return add('gain', s, x0, y0, z, { r: 1.25, val: 9, word: w });
+    const s = label('…', '#e3d6ff', 1.1); s.add(glow(0xb18cff, 2.6, .7)); const it = add('gain', s, x0, y0, z, { r: 1.25, val: 9, word: true });
+    relabelTokens(); return it;
   }
   for (let k = 0; k < 5; k++) {
     const u = k / 4, x = lerp(x0, x1, u), y = lerp(y0, y1, u), c = GAIN[st.gain];
     const m = new THREE.Mesh(st.gain === 'packet' ? G.cube : G.oct, new THREE.MeshBasicMaterial({ color: c })); if (st.gain === 'packet') m.scale.setScalar(.6);
     m.add(glow(c, 1.5, .6)); add('gain', m, x, y, z - k * 3.2, { r: .95, val: 5, spin: 3 });
   }
+}
+/** words in flight, nearest first, always read as the next words of the sentence */
+function relabelTokens() {
+  const live = items.filter(it => it.word && !it.used && it.z < 0).sort((a, b) => b.z - a.z);
+  live.forEach((it, k) => {
+    const w = SENTENCE[(state.tokens + k) % SENTENCE.length]; if (it.text === w) return;
+    const { tex, aspect } = labelTex(w, '#e3d6ff'); it.obj.material.map = tex; it.obj.material.needsUpdate = true; it.obj.scale.set(1.1 * aspect, 1.1, 1); it.text = w;
+  });
 }
 let ringIx = 0;
 function spawnRing(st, z) {
@@ -357,8 +375,7 @@ function spawnDecor(st, z) {
 
 // ---------- game state ----------
 const state = { mode: 'attract', d: 0, speed: 30, energy: 100, score: 0, stage: 0, lap: 0, tokens: 0, rings: 0, picks: 0, hits: 0, best: 0, paused: false };
-let pendingTokens = 0, next = { hit: 40, gain: 30, ring: 160, decor: 0 }, target = { x: 0, y: 0 }, pos = { x: 0, y: 0 }, shake = 0, keys = new Set(), last = performance.now();
-try { state.best = +localStorage.getItem('photon-dash-best') || 0; } catch {}
+let next = { hit: 40, gain: 30, ring: 160, decor: 0 }, target = { x: 0, y: 0 }, pos = { x: 0, y: 0 }, shake = 0, keys = new Set(), last = performance.now();
 const stageAt = (d) => Math.floor(d / PHASE_LEN) % STAGES.length, lapAt = (d) => Math.floor(d / PHASE_LEN / STAGES.length);
 
 function reset(mode) {
@@ -367,7 +384,7 @@ function reset(mode) {
   Object.assign(state, { player: state.player, mode, d: 0, speed: 30, energy: 100, score: 0, stage: 0, lap: 0, tokens: 0, rings: 0, picks: 0, hits: 0, paused: false });
   // practice: index.html#stage3 starts at stage 3
   const from = (clamp(+(/stage(\d)/.exec(location.hash)?.[1] ?? 1), 1, 5) - 1) * PHASE_LEN; state.d = from;
-  pendingTokens = 0; ringIx = 0; next = { hit: from + 40, gain: from + 30, ring: from + 160, decor: from }; pos = { x: 0, y: 0 }; target = { x: 0, y: 0 }; hist.length = 0;
+  ringIx = 0; next = { hit: from + 40, gain: from + 30, ring: from + 160, decor: from }; pos = { x: 0, y: 0 }; target = { x: 0, y: 0 }; hist.length = 0;
   setStage(stageAt(from), true);
 }
 
@@ -434,7 +451,11 @@ $('resume').onclick = () => setPause(false);
 $('quit').onclick = () => { if (state.mode === 'play') { setPause(true); $('endRun').focus(); } };
 $('endRun').onclick = () => { if (state.mode === 'play') { setPause(false); gameOver(true); } };
 addEventListener('keydown', (e) => { if ((e.key === 'e' || e.key === 'E') && state.mode === 'play' && state.paused) $('endRun').click(); });
-document.addEventListener('visibilitychange', () => { if (document.hidden && state.mode === 'play') setPause(true); });
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && state.mode === 'play') setPause(true);
+  const v = $('introV'); if ($('ovIntro').hidden || counting) return;   // the briefing waits for you too
+  if (document.hidden) v.pause(); else v.play().catch(() => { $('vplay').hidden = false; });
+});
 function launch() {
   if (!state.player) { showStart(); return; }
   try { ac ??= new (window.AudioContext || window.webkitAudioContext)(); ac.resume(); } catch {}
@@ -636,11 +657,15 @@ async function recordScore(run) {
 
 function gameOver(early = false) {
   state.mode = 'over'; $('app').classList.remove('playing'); $('banner').style.opacity = 0; tone(440, 60, 1.2, 'sawtooth', .06);
-  const sc = Math.floor(state.score), isBest = sc > state.best; if (isBest) { state.best = sc; try { localStorage.setItem('photon-dash-best', sc); } catch {} }
+  // best per pilot on this device
+  let bests = {}; try { bests = JSON.parse(localStorage.getItem('photon-dash-bests')) || {}; } catch {}
+  const pk = pilotKey(state.player || ''), sc = Math.floor(state.score), prevBest = bests[pk] ?? 0, isBest = sc > prevBest;
+  if (isBest) { bests[pk] = sc; try { localStorage.setItem('photon-dash-bests', JSON.stringify(bests)); } catch {} }
+  state.best = Math.max(prevBest, sc);
   const st = STAGES[state.stage], form = { photon: 'photon', electron: 'electron', token: 'token' }[st.form];
   $('endCard').innerHTML = `<img class="logo logo-end" src="repacss-red.svg" alt="REPACSS"><div class="k">Run over · ${early ? 'you ended the run' : `${form} ran out of energy`}</div>
     <div class="big">${sc.toLocaleString('en-US')}</div>
-    <p>${isBest ? 'New best on this device.' : `Best on this device: <b>${state.best.toLocaleString('en-US')}</b>.`} You reached <b>${st.title}</b>${state.lap ? ` on lap ${state.lap + 1}` : ''}.</p>
+    <p>${isBest ? `New best for ${esc(state.player)} on this device.` : `${esc(state.player)}'s best on this device: <b>${state.best.toLocaleString('en-US')}</b>.`} You reached <b>${st.title}</b>${state.lap ? ` on lap ${state.lap + 1}` : ''}.</p>
     <div class="stats"><div>Distance<b>${Math.floor(state.d / 10).toLocaleString('en-US')} m</b></div><div>Pickups<b>${state.picks}</b></div><div>Rings<b>${state.rings}</b></div><div>Tokens<b>${state.tokens}</b></div><div>Hits<b>${state.hits}</b></div></div>
     <p style="color:var(--dim)">${st.fact}</p>
     <div class="note" id="saveNote"></div>
@@ -655,7 +680,7 @@ addEventListener('keydown', (e) => { if (e.key === 'Enter' && state.mode === 'ov
 const bgA = new THREE.Color(), fogA = new THREE.Color();
 function frame(t) {
   requestAnimationFrame(frame);
-  let dt = Math.min(.05, (t - last) / 1000); last = t;
+  let dt = clamp((t - last) / 1000, 0, .05); last = t;   // a frame's timestamp can precede `last` (set at load or on unpause): never step backwards
   if (state.paused || state.mode === 'over') dt = 0;
   const play = state.mode === 'play';
   // steering: pointer target, keys nudge it; the attract demo flies itself
@@ -708,8 +733,8 @@ function frame(t) {
       if (it.kind === 'hit' && d < it.r + .35) { it.used = true; state.energy -= it.dmg; state.hits++; shake = .6; flash('#ff2a3a', .35); tone(160, 50, .35, 'square', .06); it.obj.visible = false; }
       else if (it.kind === 'gain' && d < it.r + .35) {
         it.used = true; it.obj.visible = false; state.energy = Math.min(100, state.energy + it.val); state.picks++; state.score += 25;
-        if (it.word) { state.tokens++; pendingTokens = Math.max(0, pendingTokens - 1); state.score += 60; tone(660, 1320, .18, 'triangle', .06); } else tone(880 + state.picks % 5 * 110, 1760, .09, 'sine', .05);
-      } else if (it.kind === 'gain' && it.word) pendingTokens = Math.max(0, pendingTokens - 1);
+        if (it.word) { state.tokens++; state.score += 60; tone(660, 1320, .18, 'triangle', .06); relabelTokens(); } else tone(880 + state.picks % 5 * 110, 1760, .09, 'sine', .05);
+      } else if (it.kind === 'gain' && it.word) { it.used = true; relabelTokens(); }   // missed: the next word moves to the nearest token
       else if (it.kind === 'ring' && d < it.r) { it.used = true; state.rings++; state.score += 150; state.energy = Math.min(100, state.energy + 10); tone(523, 1046, .25, 'triangle', .07); tone(659, 1318, .3, 'sine', .05); it.obj.children[0].material.color.set(0xffffff); }
     }
     if (it.z > 12) { scene.remove(it.obj); items.splice(i, 1); }
