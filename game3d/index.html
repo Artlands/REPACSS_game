@@ -77,9 +77,9 @@
   #ovStart { place-items: stretch; }
   #ovStart .ovrow { display: grid; grid-template-columns: minmax(0, 1fr) clamp(340px, 27vw, 480px); gap: 22px; width: 100%; min-height: 100%; align-items: stretch; }
   #ovStart .ovrow > .card { padding: clamp(22px, 4vw, 48px); gap: 18px; border-radius: 22px; width: auto; }
-  #ovStart .ovrow > .card:first-child { align-self: center; }
+  #ovStart .ovrow > .card:first-child { align-self: center; justify-self: center; width: 100%; max-width: 920px; }
   #ovStart .ovrow > .board { align-content: start; overflow-y: auto; }
-  #ovStart .card p { max-width: 100ch; }
+  #ovStart .card p { max-width: 75ch; }
   @media (max-width: 900px) { #ovStart .ovrow { grid-template-columns: 1fr; } #ovStart .ovrow > .board { overflow: visible; } }
   #ovStart .card h1 { font-size: clamp(64px, 12vw, 128px); }
   #ovStart .card p, #ovStart .card ol { font-size: clamp(16px, 1.4vw, 19px); }
