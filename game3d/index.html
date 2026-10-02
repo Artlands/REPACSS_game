@@ -143,7 +143,7 @@
   .stg .do b { font-weight: 600; color: var(--dim); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; min-width: 4.2em; }
   .stg:not(:last-child)::after { content: "›"; position: absolute; right: -9px; top: 38px; font: 700 18px/1 var(--body); color: var(--dim); }
   @media (max-width: 1100px) { .stages { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); } .stg::after { display: none; } }
-  .logo-end { width: 180px; margin: 0 auto; }
+  .logo-end { width: clamp(200px, min(26vw, 32vh), 340px); margin: 0 auto; }   /* same size as the start card's logo */
   #endCard .btns { justify-content: center; }
   #endCard .btns .hint { flex-basis: 100%; text-align: center; }
   .logo-hud { position: absolute; left: 16px; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); width: clamp(96px, 10vw, 150px); opacity: .55; pointer-events: none; }
