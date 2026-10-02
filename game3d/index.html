@@ -55,6 +55,23 @@
   .stats div { background: rgba(255,255,255,.05); border-radius: 10px; padding: 9px 12px; }
   .stats b { display: block; font: 700 22px/1.1 var(--display); margin-top: 3px; }
   .foot { font-size: 12px; color: #6f7b98; }
+  .ovrow { display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-start; gap: 16px; width: min(1060px, 100%); }
+  .ovrow > .card { flex: 1 1 520px; }
+  .ovrow > .board { flex: 0 1 380px; width: auto; }
+  .card .lb { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; color: var(--ink); }
+  .lb li { display: grid; grid-template-columns: 2.2ch 28px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 7px 10px; border-radius: 10px; background: rgba(255,255,255,.04); }
+  .lb li.me { background: rgba(177,140,255,.18); outline: 1px solid rgba(177,140,255,.5); }
+  .lb .rk { font: 700 16px/1 var(--mono); color: var(--dim); text-align: right; }
+  .lb li:nth-child(1) .rk { color: #ffd27a; } .lb li:nth-child(2) .rk { color: #dfe6f2; } .lb li:nth-child(3) .rk { color: #e0a070; }
+  .lb img { width: 28px; height: 28px; border-radius: 50%; display: block; background: rgba(255,255,255,.08); }
+  .lb .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+  .lb .nm small { display: block; font: 500 12px/1.3 var(--body); color: var(--dim); }
+  .lb .sc { font: 700 17px/1 var(--mono); font-variant-numeric: tabular-nums; }
+  .lb .none { grid-template-columns: 1fr; color: var(--dim); background: transparent; padding: 4px 0; }
+  .save { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .save input { user-select: text; -webkit-user-select: text; flex: 1 1 180px; min-width: 0; padding: 11px 12px; border-radius: 10px; border: 1px solid var(--line); background: rgba(255,255,255,.06); color: var(--ink); font: 600 16px/1 var(--body); }
+  .save input:focus-visible { outline: 2px solid var(--tok); outline-offset: 1px; }
+  .note { font-size: 14px; color: #d7c9ff; }
   @media (prefers-reduced-motion: reduce) { .bar i, .banner { transition: none; } }
 </style>
 
@@ -79,7 +96,7 @@
   <div class="banner" id="banner" style="opacity:0"><div class="t" id="bannerT"></div><div class="f" id="bannerF"></div></div>
 
   <div class="ov" id="ovStart">
-    <div class="card">
+    <div class="ovrow"><div class="card">
       <div class="k">A REPACSS 3D game · Texas Tech University</div>
       <h1>Photon Dash</h1>
       <p>Every AI token starts as sunlight. Ride one photon all the way: off the Sun, through the West Texas sky, into the REPACSS solar array, down the power bus and into the cluster, until it comes out as a token.</p>
@@ -94,8 +111,9 @@
       <div class="btns"><button class="btn" id="go">Launch</button><span class="hint">Steer with the mouse, a finger, or arrow keys / WASD · P pauses</span></div>
       <div class="foot">Facility figures follow REPACSS at the GLEAMM microgrid, Reese Technology Center. Supported by the U.S. National Science Foundation under Grant No. 2404438 · repacss.org</div>
     </div>
+    <div class="card board"><div class="k bk">Top 10 pilots</div><ol class="lb"></ol></div></div>
   </div>
-  <div class="ov" id="ovEnd" hidden><div class="card" id="endCard"></div></div>
+  <div class="ov" id="ovEnd" hidden><div class="ovrow"><div class="card" id="endCard"></div><div class="card board"><div class="k bk">Top 10 pilots</div><ol class="lb"></ol></div></div></div>
   <div class="ov" id="ovPause" hidden><div class="card"><div class="k">Paused</div><div class="btns"><button class="btn" id="resume">Resume</button><span class="hint">or press P</span></div></div></div>
 </div>
 
@@ -294,6 +312,7 @@ function hud() {
 addEventListener('pointermove', (e) => { if (state.mode !== 'play') return; const k = R * 1.25; let x = (e.clientX / innerWidth * 2 - 1) * k, y = -(e.clientY / innerHeight * 2 - 1) * k; const l = Math.hypot(x, y); if (l > R) { x *= R / l; y *= R / l; } target = { x, y }; });
 addEventListener('pointerdown', (e) => { if (state.mode === 'play' && e.pointerType !== 'mouse') dispatchEvent(new PointerEvent('pointermove', e)); });
 addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT') return;
   if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) e.preventDefault();
   if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') { if (state.mode === 'play') setPause(!state.paused); return; }
   keys.add(e.key.toLowerCase());
@@ -309,6 +328,65 @@ function launch() {
 }
 $('go').onclick = launch;
 
+// ---------- scoreboard: one shared top 10 on claude.ai, this device otherwise ----------
+// Shared mode keeps one document per player at scores/<their id> holding their best run; everyone reads, each writes only their own.
+const board = { shared: false, rows: [], me: null, myBest: 0, db: null, user: null, justSaved: null };
+const LKEY = 'photon-dash-top10', STAGE_SHORT = ['Sun', 'Sky', 'Power bus', 'Cluster', 'Tensor cores'];
+const loadLocal = () => { try { const v = JSON.parse(localStorage.getItem(LKEY)); return Array.isArray(v) ? v : []; } catch { return []; } };
+board.rows = loadLocal();
+const qualifies = (sc) => sc > 0 && (board.rows.length < 10 || sc > (board.rows.at(-1)?.score ?? 0));
+async function renderBoards() {
+  const ids = board.shared ? board.rows.map(r => r.id) : [];
+  const ps = board.shared && ids.length ? await board.user.profiles(ids) : {};
+  for (const ol of document.querySelectorAll('.lb')) {
+    ol.replaceChildren();
+    if (!board.rows.length) { const li = document.createElement('li'); li.className = 'none'; li.textContent = 'No runs yet. Be the first on the board.'; ol.appendChild(li); continue; }
+    board.rows.forEach((r, i) => {
+      const li = document.createElement('li'), mine = board.shared ? r.id === board.me : r.at === board.justSaved;
+      if (mine) li.className = 'me';
+      const rk = document.createElement('span'); rk.className = 'rk'; rk.textContent = i + 1;
+      const img = document.createElement('img'); img.alt = '';
+      const nm = document.createElement('span'); nm.className = 'nm';
+      const who = board.shared ? (ps[r.id]?.name || 'A pilot') : (r.name || 'Pilot');
+      nm.textContent = who + (mine ? ' (you)' : '');
+      const sm = document.createElement('small'); sm.textContent = `${STAGE_SHORT[r.stage] ?? 'Sun'}${r.lap ? ` · lap ${r.lap + 1}` : ''} · ${r.tokens ?? 0} tokens`; nm.appendChild(sm);
+      if (board.shared) img.src = ps[r.id]?.avatarUrl ?? ''; else { img.style.background = `hsl(${[...who].reduce((a, c) => a + c.charCodeAt(0), 0) * 37 % 360} 55% 45%)`; }
+      const sc = document.createElement('span'); sc.className = 'sc'; sc.textContent = Math.floor(r.score).toLocaleString('en-US');
+      li.append(rk, img, nm, sc); ol.appendChild(li);
+    });
+  }
+  document.querySelectorAll('.bk').forEach(k => k.textContent = board.shared ? 'Top 10 pilots · everyone playing this page' : 'Top 10 pilots · this device');
+}
+renderBoards();
+(async () => {
+  const use = (n) => (window.claude?.use ? window.claude.use(n) : Promise.resolve(null));
+  const [db, user] = await Promise.all([use('db'), use('user')]);
+  if (!db || !user) return;
+  board.db = db; board.user = user; board.shared = true; board.rows = []; board.me = await user.id();
+  db.collection('scores').orderBy('score', 'desc').limit(10).onSnapshot((snap) => { board.rows = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderBoards(); }, () => {});
+  if (board.me) { const d = await db.doc('scores/' + board.me).get().catch(() => null); board.myBest = d?.exists ? (d.data().score || 0) : 0; }
+  renderBoards();
+})();
+async function recordScore(run) {
+  const note = $('saveNote');
+  if (board.shared) {
+    if (!board.me) { note.textContent = 'Sign in to claude.ai to put your runs on the board.'; return; }
+    if (run.score <= board.myBest) { note.textContent = `Your best on the board is ${board.myBest.toLocaleString('en-US')}. Beat it to move up.`; return; }
+    try { await board.db.doc('scores/' + board.me).set(run); board.myBest = run.score; note.textContent = 'New personal best, saved to the board.'; }
+    catch (e) { note.textContent = e?.code === 'invalid_argument' ? 'This page is view-only for you, so your score can\'t be saved. Ask the owner for Contributor access.' : e?.code === 'quota_exceeded' ? 'The scoreboard is full right now.' : 'Couldn\'t reach the scoreboard. Try again after your next run.'; }
+    return;
+  }
+  if (!qualifies(run.score)) { note.textContent = `Not quite top 10 on this device. The board starts at ${Math.floor(board.rows.at(-1).score).toLocaleString('en-US')}.`; return; }
+  $('saveForm').hidden = false; let last = ''; try { last = localStorage.getItem('photon-dash-name') || ''; } catch {}
+  $('pilot').value = last; $('pilot').focus(); note.textContent = 'You made the top 10. Add your name to the board.';
+  $('saveForm').onsubmit = (e) => {
+    e.preventDefault(); const name = $('pilot').value.trim().slice(0, 24) || 'Pilot';
+    const at = Date.now(); board.rows = [...board.rows, { ...run, name, at }].sort((a, b) => b.score - a.score).slice(0, 10); board.justSaved = at;
+    try { localStorage.setItem(LKEY, JSON.stringify(board.rows)); localStorage.setItem('photon-dash-name', name); } catch {}
+    $('saveForm').hidden = true; note.textContent = `Saved. You're #${board.rows.findIndex(r => r.at === at) + 1} on this device.`; renderBoards(); $('again').focus();
+  };
+}
+
 function gameOver() {
   state.mode = 'over'; tone(440, 60, 1.2, 'sawtooth', .06);
   const sc = Math.floor(state.score), isBest = sc > state.best; if (isBest) { state.best = sc; try { localStorage.setItem('photon-dash-best', sc); } catch {} }
@@ -318,10 +396,14 @@ function gameOver() {
     <p>${isBest ? 'New best on this device.' : `Best on this device: <b>${state.best.toLocaleString('en-US')}</b>.`} You reached <b>${st.title}</b>${state.lap ? ` on lap ${state.lap + 1}` : ''}.</p>
     <div class="stats"><div>Distance<b>${Math.floor(state.d / 10).toLocaleString('en-US')} m</b></div><div>Pickups<b>${state.picks}</b></div><div>Rings<b>${state.rings}</b></div><div>Tokens<b>${state.tokens}</b></div><div>Hits<b>${state.hits}</b></div></div>
     <p style="color:var(--dim)">${st.fact}</p>
+    <div class="note" id="saveNote"></div>
+    <form class="save" id="saveForm" hidden><label for="pilot" class="k" style="flex-basis:100%">Pilot name</label><input id="pilot" maxlength="24" autocomplete="nickname" placeholder="Your name"><button class="btn" type="submit">Save</button></form>
     <div class="btns"><button class="btn" id="again">Fly again</button><span class="hint">or press Enter</span></div>`;
   $('ovEnd').hidden = false; $('again').onclick = launch; $('again').focus();
+  recordScore({ score: sc, stage: state.stage, lap: state.lap, tokens: state.tokens, at: Date.now() });
+  renderBoards();
 }
-addEventListener('keydown', (e) => { if (e.key === 'Enter' && state.mode === 'over') launch(); });
+addEventListener('keydown', (e) => { if (e.key === 'Enter' && state.mode === 'over' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON') launch(); });
 
 // ---------- loop ----------
 const bgA = new THREE.Color(), fogA = new THREE.Color();

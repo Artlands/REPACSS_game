@@ -66,6 +66,7 @@ To tune the music, change the three numbers at the top of `music.py` (`BED_DB`, 
 
 - Play: open `game3d/index.html` in a browser (it needs an internet connection for three.js and fonts).
 - Practice a stage: add `#stage1` … `#stage5` to the URL.
+- Scoreboard: a top-10 board shows on the start and end screens. On the published claude.ai page it is shared by everyone who plays (one best run per player, names from their claude.ai profile). Opened as a local file, it keeps a top 10 on that device and asks for a pilot name.
 
 ## Project layout
 
