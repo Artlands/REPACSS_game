@@ -93,6 +93,18 @@
   :is(#ovStart, #ovEnd) .lb .nm { font-size: 18px; }
   :is(#ovStart, #ovEnd) .lb .nm small { font-size: 13.5px; }
   :is(#ovStart, #ovEnd) .lb .sc { font-size: 22px; }
+  #ovIntro { background: #000; padding: 0; place-items: stretch; }
+  .vwrap { position: relative; display: grid; place-items: center; min-height: 100%; }
+  .vwrap video { width: 100%; height: 100%; max-height: 100vh; object-fit: contain; background: #000; }
+  .vwrap video::cue { font: 500 clamp(16px, 2.2vw, 26px)/1.35 var(--body); background: rgba(0,0,0,.65); }
+  .vbar { position: absolute; left: 0; right: 0; top: 0; display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    padding: calc(14px + env(safe-area-inset-top, 0px)) 18px 14px; background: linear-gradient(rgba(0,0,0,.65), rgba(0,0,0,0)); }
+  .vbar .k { font: 600 12px/1 var(--body); letter-spacing: .2em; text-transform: uppercase; color: #c7cfe2; }
+  .vbar .btn { font-size: 17px; padding: 11px 18px; }
+  .vprog { position: absolute; left: 0; bottom: 0; height: 4px; background: linear-gradient(90deg, var(--sun), var(--elec), var(--tok)); width: 0; }
+  .linkbtn { background: none; border: 0; padding: 0; color: var(--elec); font: 600 15px/1.4 var(--body); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+  #fs { position: absolute; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 5; width: 44px; height: 44px; display: grid; place-items: center; }
+  #fs svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
   @media (prefers-reduced-motion: reduce) { .bar i, .banner { transition: none; } }
 </style>
 
@@ -131,13 +143,19 @@
       </ol>
       <p>Your energy drains as you fly. Collect glowing pickups to refill it, and fly through rings for bonuses.</p>
       <form class="save" id="startForm"><label for="pilot" class="k" style="flex-basis:100%">Your pilot name · shown on the scoreboard</label><input id="pilot" maxlength="24" autocomplete="nickname" placeholder="Enter your name" required><button class="btn" id="go" type="submit">Launch</button></form>
-      <div class="hint">Steer with the mouse, a finger, or arrow keys / WASD · P pauses</div>
+      <div class="hint">Steer with the mouse, a finger, or arrow keys / WASD · P pauses · F full screen · New here? <button class="linkbtn" id="watch" type="button">Watch the 45-second intro</button></div>
       <div class="foot">Facility figures follow REPACSS at the GLEAMM microgrid, Reese Technology Center. Supported by the U.S. National Science Foundation under Grant No. 2404438 · repacss.org</div>
     </div>
     <div class="card board"><div class="k bk">Top 10 pilots</div><ol class="lb"></ol></div></div>
   </div>
   <div class="ov" id="ovEnd" hidden><div class="ovrow"><div class="card" id="endCard"></div><div class="card board"><div class="k bk">Top 10 pilots</div><ol class="lb"></ol></div></div></div>
+  <div class="ov" id="ovIntro" hidden><div class="vwrap">
+    <video id="introV" playsinline preload="metadata"><source src="intro.mp4" type="video/mp4"></video>
+    <div class="vbar"><span class="k">REPACSS in 45 seconds · then you fly</span><button class="btn" id="skip">Skip intro</button></div>
+    <div class="vprog" id="vprog"></div>
+  </div></div>
   <div class="ov" id="ovPause" hidden><div class="card"><div class="k">Paused</div><p>Your score so far still counts if you end the run now.</p><div class="btns"><button class="btn" id="resume">Resume</button><button class="btn" id="endRun" style="background:transparent;color:var(--alarm);border:1px solid var(--alarm)">End run</button><span class="hint">P resumes · E ends the run</span></div></div></div>
+  <button class="ib" id="fs" aria-label="Full screen" title="Full screen (F)" hidden><svg viewBox="0 0 24 24"><path id="fsIcon" d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
 </div>
 
 <script type="importmap">
@@ -309,6 +327,23 @@ function tone(f0, f1, dur, type = 'sine', vol = .08) {
   o.type = type; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
   o.connect(g).connect(ac.destination); o.start(t); o.stop(t + dur);
 }
+// full screen: the button (or F) toggles the whole game; hidden where the browser can't do it (e.g. iPhone Safari)
+const fsTarget = $('app'), fsOn = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
+if (document.fullscreenEnabled || document.webkitFullscreenEnabled) $('fs').hidden = false;
+function toggleFs() {
+  try {
+    if (fsOn()) (document.exitFullscreen || document.webkitExitFullscreen).call(document)?.catch?.(() => {});
+    else (fsTarget.requestFullscreen || fsTarget.webkitRequestFullscreen).call(fsTarget)?.catch?.(() => {});
+  } catch {}
+}
+function fsChanged() {
+  const on = fsOn(); $('fs').setAttribute('aria-label', on ? 'Exit full screen' : 'Full screen'); $('fs').title = on ? 'Exit full screen (F)' : 'Full screen (F)';
+  $('fsIcon').setAttribute('d', on ? 'M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5' : 'M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5');
+  setTimeout(resize, 50);
+}
+document.addEventListener('fullscreenchange', fsChanged); document.addEventListener('webkitfullscreenchange', fsChanged);
+$('fs').onclick = toggleFs;
+addEventListener('keydown', (e) => { if ((e.key === 'f' || e.key === 'F') && e.target.tagName !== 'INPUT' && !$('fs').hidden) toggleFs(); });
 $('mute').onclick = () => { muted = !muted; $('mute').style.opacity = muted ? .45 : 1; $('mute').setAttribute('aria-label', muted ? 'Sound on' : 'Sound off'); };
 
 // ---------- HUD ----------
@@ -360,29 +395,65 @@ $('startForm').onsubmit = (e) => {
   e.preventDefault(); const name = $('pilot').value.trim().replace(/\s+/g, ' ').slice(0, 24);
   if (!name) { $('pilot').focus(); return; }
   state.player = name; try { localStorage.setItem('photon-dash-name', name); } catch {}
-  launch();
+  let seen = false; try { seen = localStorage.getItem('photon-dash-intro') === '1'; } catch {}
+  if (seen) launch(); else playIntro(launch);
 };
+// ---------- intro video: REPACSS in 45 seconds (first launch on this browser, or "Watch the intro") ----------
+const INTRO_CUES = [
+  [1.0, 5.88, "Every answer an AI gives you is built from tokens, and every token starts as energy."],
+  [6.47, 12.11, "At Texas Tech University, a supercomputer called REPACSS takes much of its energy straight from the sun."],
+  [12.71, 19.4, "It lives at GLEAMM, a microgrid lab on the West Texas plains, beside a 350 kilowatt solar array."],
+  [20.0, 24.9, "When clouds roll over, a battery, the power grid, and a diesel generator step in."],
+  [25.5, 30.05, "Sunlight frees electrons in silicon, and those electrons flow into the cluster."],
+  [30.65, 37.05, "There, thousands of processor cores and powerful GPUs turn electricity into science, and into tokens."],
+  [37.65, 44.17, "In Photon Dash, you are that photon. Fly from the sun to a token, and see how far your energy takes you."],
+];   // from build/captions_game_intro.srt (narration.py game_intro)
+{ // captions as a text track built in the page (artifacts don't serve .vtt files)
+  const tr = $('introV').addTextTrack('captions', 'English', 'en'); tr.mode = 'showing';
+  for (const [a, b, t] of INTRO_CUES) tr.addCue(new VTTCue(a, b, t));
+}
+let introDone = null;
+function playIntro(then) {
+  const v = $('introV'); introDone = then; try { localStorage.setItem('photon-dash-intro', '1'); } catch {}
+  $('ovStart').hidden = true; $('ovIntro').hidden = false; v.currentTime = 0; $('skip').focus();
+  v.play().catch(() => { v.controls = true; });   // if autoplay is refused, show the native controls
+}
+function endIntro() {
+  const v = $('introV'); if ($('ovIntro').hidden) return;
+  v.pause(); $('ovIntro').hidden = true; const t = introDone; introDone = null; t?.();
+}
+$('introV').addEventListener('ended', endIntro);
+$('introV').addEventListener('error', endIntro, true);   // missing video: go straight on
+$('introV').addEventListener('timeupdate', (e) => { $('vprog').style.width = (e.target.currentTime / (e.target.duration || 46) * 100) + '%'; });
+$('skip').onclick = endIntro;
+$('watch').onclick = () => playIntro(() => { $('ovStart').hidden = false; $('pilot').focus(); });
+addEventListener('keydown', (e) => { if (!$('ovIntro').hidden && (e.key === 'Escape' || e.key === 'Enter')) { e.preventDefault(); endIntro(); } });
 
 // ---------- scoreboard: one shared top 10 on claude.ai, this device otherwise ----------
 // Shared mode keeps one document per player at scores/<their id> holding their best run; everyone reads, each writes only their own.
-const board = { shared: false, rows: [], me: null, myBest: 0, db: null, user: null, justSaved: null };
+// Shared mode: one document per claude.ai account at scores/<their id> = { pilots: { <name key>: best run } }, so every pilot
+// name gets its own entry; the board flattens all pilots from all accounts and ranks them. (A pre-pilots document that is
+// itself a single run counts as one unnamed pilot.)
+const board = { shared: false, rows: [], me: null, mine: {}, db: null, user: null, justSaved: null };
+const pilotKey = (name) => name.trim().toLowerCase().replace(/\s+/g, ' ');
+const pilotsOf = (d) => d?.pilots && typeof d.pilots === 'object' ? { ...d.pilots } : d && typeof d.score === 'number' ? { '': { ...d } } : {};
 const LKEY = 'photon-dash-top10', STAGE_SHORT = ['Sun', 'Sky', 'Power bus', 'Cluster', 'Tensor cores'];
 const loadLocal = () => { try { const v = JSON.parse(localStorage.getItem(LKEY)); return Array.isArray(v) ? v : []; } catch { return []; } };
 board.rows = loadLocal();
 const qualifies = (sc) => sc > 0 && (board.rows.length < 10 || sc > (board.rows.at(-1)?.score ?? 0));
 async function renderBoards() {
-  const ids = board.shared ? board.rows.map(r => r.id) : [];
+  const ids = board.shared ? [...new Set(board.rows.map(r => r.uid))] : [];
   const ps = board.shared && ids.length ? await board.user.profiles(ids) : {};
   for (const ol of document.querySelectorAll('.lb')) {
     ol.replaceChildren();
     if (!board.rows.length) { const li = document.createElement('li'); li.className = 'none'; li.textContent = 'No runs yet. Be the first on the board.'; ol.appendChild(li); continue; }
     board.rows.forEach((r, i) => {
-      const li = document.createElement('li'), mine = board.shared ? r.id === board.me : r.at === board.justSaved;
+      const li = document.createElement('li'), mine = board.shared ? r.uid === board.me && pilotKey(r.name || '') === pilotKey(state.player || '') : r.at === board.justSaved;
       if (mine) li.className = 'me';
       const rk = document.createElement('span'); rk.className = 'rk'; rk.textContent = i + 1;
       const img = document.createElement('img'); img.alt = '';
       const nm = document.createElement('span'); nm.className = 'nm';
-      const who = r.name || (board.shared ? ps[r.id]?.name : '') || 'A pilot';
+      const who = r.name || (board.shared ? ps[r.uid]?.name : '') || 'A pilot';
       nm.textContent = who + (mine ? ' (you)' : '');
       const sm = document.createElement('small'); sm.textContent = `${STAGE_SHORT[r.stage] ?? 'Sun'}${r.lap ? ` · lap ${r.lap + 1}` : ''} · ${r.tokens ?? 0} tokens`; nm.appendChild(sm);
       if (board.shared) img.src = ps[r.id]?.avatarUrl ?? ''; else { img.style.background = `hsl(${[...who].reduce((a, c) => a + c.charCodeAt(0), 0) * 37 % 360} 55% 45%)`; }
@@ -398,16 +469,23 @@ renderBoards();
   const [db, user] = await Promise.all([use('db'), use('user')]);
   if (!db || !user) return;
   board.db = db; board.user = user; board.shared = true; board.rows = []; board.me = await user.id();
-  db.collection('scores').orderBy('score', 'desc').limit(10).onSnapshot((snap) => { board.rows = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderBoards(); }, () => {});
-  if (board.me) { const d = await db.doc('scores/' + board.me).get().catch(() => null); board.myBest = d?.exists ? (d.data().score || 0) : 0; }
+  db.collection('scores').onSnapshot((snap) => {
+    const all = [];
+    for (const d of snap.docs) { const p = pilotsOf(d.data()); if (d.id === board.me) board.mine = p; for (const run of Object.values(p)) if (typeof run?.score === 'number') all.push({ ...run, uid: d.id }); }
+    board.rows = all.sort((a, b) => b.score - a.score).slice(0, 10); renderBoards();
+  }, () => {});
   renderBoards();
 })();
 async function recordScore(run) {
   const note = $('saveNote');
   if (board.shared) {
     if (!board.me) { note.textContent = 'Sign in to claude.ai to put your runs on the board.'; return; }
-    if (run.score <= board.myBest) { note.textContent = `${run.name}, your best on the board is ${board.myBest.toLocaleString('en-US')}. Beat it to move up.`; return; }
-    try { await board.db.doc('scores/' + board.me).set(run); board.myBest = run.score; note.textContent = `New personal best for ${run.name}, saved to the board.`; }
+    const key = pilotKey(run.name), prev = board.mine[key];
+    if (prev && run.score <= prev.score) { note.textContent = `${run.name}'s best on the board is ${prev.score.toLocaleString('en-US')}. Beat it to move up.`; return; }
+    // keep at most 30 pilots per account: drop the lowest if this is a new one
+    const pilots = { ...board.mine, [key]: run }, keys = Object.keys(pilots);
+    if (keys.length > 30) delete pilots[keys.filter(k => k !== key).sort((a, b) => pilots[a].score - pilots[b].score)[0]];
+    try { await board.db.doc('scores/' + board.me).set({ pilots }); board.mine = pilots; note.textContent = `${prev ? 'New personal best' : 'First run'} for ${run.name}, saved to the board.`; }
     catch (e) { note.textContent = e?.code === 'invalid_argument' ? 'This page is view-only for you, so your score can\'t be saved. Ask the owner for Contributor access.' : e?.code === 'quota_exceeded' ? 'The scoreboard is full right now.' : 'Couldn\'t reach the scoreboard. Try again after your next run.'; }
     return;
   }

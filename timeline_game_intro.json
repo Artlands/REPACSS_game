@@ -1,0 +1,89 @@
+{
+ "total": 46.172,
+ "scenes": [
+  {
+   "id": "c_sun",
+   "start": 0.0,
+   "dur": 6.175,
+   "sentences": [
+    {
+     "start": 1.0,
+     "end": 5.875,
+     "text": "Every answer an AI gives you is built from tokens, and every token starts as energy."
+    }
+   ]
+  },
+  {
+   "id": "c_dive",
+   "start": 6.175,
+   "dur": 6.233,
+   "sentences": [
+    {
+     "start": 0.3,
+     "end": 5.933,
+     "text": "At Texas Tech University, a supercomputer called REPACSS takes much of its energy straight from the sun."
+    }
+   ]
+  },
+  {
+   "id": "c_site",
+   "start": 12.408,
+   "dur": 7.288,
+   "sentences": [
+    {
+     "start": 0.3,
+     "end": 6.988,
+     "text": "It lives at GLEAMM, a microgrid lab on the West Texas plains, beside a 350 kilowatt solar array."
+    }
+   ]
+  },
+  {
+   "id": "c_energy",
+   "start": 19.696,
+   "dur": 5.508,
+   "sentences": [
+    {
+     "start": 0.3,
+     "end": 5.208,
+     "text": "When clouds roll over, a battery, the power grid, and a diesel generator step in."
+    }
+   ]
+  },
+  {
+   "id": "c_photon",
+   "start": 25.204,
+   "dur": 5.146,
+   "sentences": [
+    {
+     "start": 0.3,
+     "end": 4.846,
+     "text": "Sunlight frees electrons in silicon, and those electrons flow into the cluster."
+    }
+   ]
+  },
+  {
+   "id": "c_compute",
+   "start": 30.35,
+   "dur": 7.0,
+   "sentences": [
+    {
+     "start": 0.3,
+     "end": 6.7,
+     "text": "There, thousands of processor cores and powerful GPUs turn electricity into science, and into tokens."
+    }
+   ]
+  },
+  {
+   "id": "c_outro",
+   "start": 37.35,
+   "dur": 8.822,
+   "sentences": [
+    {
+     "start": 0.3,
+     "end": 6.822,
+     "text": "In Photon Dash, you are that photon. Fly from the sun to a token, and see how far your energy takes you."
+    }
+   ]
+  }
+ ]
+}

@@ -5,9 +5,10 @@ Voice: Qwen3-TTS 1.7B Base (Apache-2.0) via mlx-audio, cloned from one fixed ref
 Each sentence is synthesized separately so the animation can key visual beats to exact sentence start times.
 Every take is transcribed with Whisper and pitch-checked against the reference; takes that garble words,
 misread a number, or drift from the reference voice are re-rolled with a new seed.
-Usage: .venv-tts/bin/python narration.py            (reuses cached takes in build/tts unless the text changed)
+Usage: .venv-tts/bin/python narration.py [game_intro]  (reuses cached takes in build/tts unless the text changed)
+The optional story id picks a script from STORIES and suffixes every output (timeline_game_intro.json, ...).
 """
-import difflib, hashlib, json, os, re, wave
+import difflib, hashlib, json, os, re, sys, wave
 import numpy as np
 
 MODEL = "mlx-community/Qwen3-TTS-12Hz-1.7B-Base-bf16"
@@ -110,6 +111,20 @@ SCRIPT = [
         "From photons, to electrons, to tokens. This is REPACSS.",
     ]),
 ]
+
+# Intro for the Photon Dash game: ~45 s, one sentence per clip cut from the Photons to Tokens render (game3d/make_intro.py)
+GAME_INTRO = [
+    ("c_sun", 1.0, 0.3, ["Every answer an AI gives you is built from tokens, and every token starts as energy."]),
+    ("c_dive", 0.3, 0.3, ["At Texas Tech University, a supercomputer called REPACSS takes much of its energy straight from the sun."]),
+    ("c_site", 0.3, 0.3, ["It lives at GLEAMM, a microgrid lab on the West Texas plains, beside a 350 kilowatt solar array."]),
+    ("c_energy", 0.3, 0.3, ["When clouds roll over, a battery, the power grid, and a diesel generator step in."]),
+    ("c_photon", 0.3, 0.3, ["Sunlight frees electrons in silicon, and those electrons flow into the cluster."]),
+    ("c_compute", 0.3, 0.3, ["There, thousands of processor cores and powerful GPUs turn electricity into science, and into tokens."]),
+    ("c_outro", 0.3, 2.0, ["In Photon Dash, you are that photon. Fly from the sun to a token, and see how far your energy takes you."]),
+]
+STORIES = {"photons": SCRIPT, "game_intro": GAME_INTRO}
+STORY = sys.argv[1] if len(sys.argv) > 1 else "photons"
+SFX = "" if STORY == "photons" else "_" + STORY
 
 # Spoken-form fixes so the TTS pronounces acronyms well. Display text keeps the original.
 SPOKEN = [
@@ -224,14 +239,14 @@ def main():
         pcm.extend(b"\0\0" * n)
         t += n / SR
 
-    for sid, lead, tail, sentences in SCRIPT:
+    for sid, lead, tail, sentences in STORIES[STORY]:
         start = t
         silence(lead)
         sents = []
         for i, s in enumerate(sentences):
             if i: silence(GAP)
             print(f"{sid}[{i}] {s[:70]}")
-            dur, frames = tts(s, f"build/tts/{sid}_{i}.wav")
+            dur, frames = tts(s, f"build/tts/{STORY + '_' if SFX else ''}{sid}_{i}.wav")
             sents.append({"start": round(t - start, 3), "end": round(t - start + dur, 3), "text": s})
             srt.append((t, t + dur, s))
             pcm.extend(frames)
@@ -239,10 +254,10 @@ def main():
         silence(tail)
         scenes.append({"id": sid, "start": round(start, 3), "dur": round(t - start, 3), "sentences": sents})
 
-    with wave.open("build/narration.wav", "wb") as w:
+    with wave.open(f"build/narration{SFX}.wav", "wb") as w:
         w.setnchannels(1); w.setsampwidth(2); w.setframerate(SR); w.writeframes(bytes(pcm))
-    json.dump({"total": round(t, 3), "scenes": scenes}, open("timeline.json", "w"), indent=1)
-    with open("build/captions.srt", "w") as f:
+    json.dump({"total": round(t, 3), "scenes": scenes}, open(f"timeline{SFX}.json", "w"), indent=1)
+    with open(f"build/captions{SFX}.srt", "w") as f:
         for i, (a0, a1, s) in enumerate(srt, 1):
             f.write(f"{i}\n{srt_time(a0)} --> {srt_time(a1)}\n{s}\n\n")
     for s in scenes:
