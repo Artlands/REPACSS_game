@@ -107,6 +107,20 @@
   .logo { display: block; height: auto; }
   .logo-start { width: clamp(200px, 26vw, 340px); margin: 0 auto 4px; }
   .logo-start + .k { text-align: center; }
+  #ovStart .card h1 { text-align: center; }
+  .stages { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+  .stg { position: relative; display: grid; justify-items: center; align-content: start; gap: 6px; text-align: center; padding: 14px 8px 12px; border-radius: 14px;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--c) 16%, transparent), rgba(255,255,255,.03)); border: 1px solid color-mix(in srgb, var(--c) 35%, transparent); }
+  .stg .n { position: absolute; left: 9px; top: 7px; font: 700 13px/1 var(--mono); color: var(--c); opacity: .9; }
+  .stg .fig { width: 64px; height: 64px; filter: drop-shadow(0 0 10px color-mix(in srgb, var(--c) 55%, transparent)); }
+  .stg .role { font: 600 11px/1.2 var(--body); letter-spacing: .14em; text-transform: uppercase; color: var(--c); }
+  .stg .nm { font: 700 19px/1.1 var(--display); color: var(--ink); min-height: 2.2em; display: grid; align-items: center; }
+  .stg .do { display: grid; gap: 4px; justify-items: start; font-size: 13px; color: #c9d2e6; }
+  .stg .do span { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .stg .do svg { width: 18px; height: 18px; flex: none; }
+  .stg .do b { font-weight: 600; color: var(--dim); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; min-width: 4.2em; }
+  .stg:not(:last-child)::after { content: "›"; position: absolute; right: -9px; top: 38px; font: 700 18px/1 var(--body); color: var(--dim); }
+  @media (max-width: 1100px) { .stages { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); } .stg::after { display: none; } }
   .logo-end { width: 180px; }
   .logo-hud { position: absolute; left: 16px; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); width: clamp(96px, 10vw, 150px); opacity: .55; pointer-events: none; }
   #fs { position: absolute; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 5; width: 44px; height: 44px; display: grid; place-items: center; }
@@ -142,13 +156,7 @@
       <div class="k">A REPACSS 3D game · Texas Tech University</div>
       <h1>Photon Dash</h1>
       <p>Every AI token starts as sunlight. Ride one photon all the way: off the Sun, through the West Texas sky, into the REPACSS solar array, down the power bus and into the cluster, until it comes out as a token.</p>
-      <ol>
-        <li><b>Leaving the Sun</b> · dodge space dust</li>
-        <li><b>West Texas sky</b> · dodge clouds, dive into the 350 kW array</li>
-        <li><b>Silicon to the power bus</b> · now an electron: dodge hot resistors, fly through the rings</li>
-        <li><b>The REPACSS cluster</b> · weave past heat plumes, grab data packets</li>
-        <li><b>Tensor cores</b> · collect the tokens in order</li>
-      </ol>
+      <div class="stages" id="stages" aria-label="The five stages and your role in each"></div>
       <p>Your energy drains as you fly. Collect glowing pickups to refill it, and fly through rings for bonuses.</p>
       <form class="save" id="startForm"><label for="pilot" class="k" style="flex-basis:100%">Your pilot name · shown on the scoreboard</label><input id="pilot" maxlength="24" autocomplete="nickname" placeholder="Enter your name" required><button class="btn" id="go" type="submit">Launch</button></form>
       <div class="hint">Steer with the mouse, a finger, or arrow keys / WASD · P pauses · F full screen · Every run starts with a 45-second REPACSS intro</div>
@@ -419,6 +427,38 @@ const INTRO_CUES = [
 { // captions as a text track built in the page (artifacts don't serve .vtt files)
   const tr = $('introV').addTextTrack('captions', 'English', 'en'); tr.mode = 'showing';
   for (const [a, b, t] of INTRO_CUES) tr.addCue(new VTTCue(a, b, t));
+}
+// ---------- start card: the five stages, the player's role in each, what to dodge and what to grab ----------
+{
+  const svg = (inner, vb = 64) => `<svg viewBox="0 0 ${vb} ${vb}" aria-hidden="true">${inner}</svg>`;
+  const FIG = {
+    photon: svg('<defs><radialGradient id="gp"><stop offset="0" stop-color="#fff"/><stop offset=".35" stop-color="#ffe7a8"/><stop offset="1" stop-color="#ffb53c" stop-opacity="0"/></radialGradient></defs><path d="M4 40 q5 -8 10 0 t10 0" fill="none" stroke="#ffd27a" stroke-width="2.5" stroke-linecap="round" opacity=".8"/><circle cx="38" cy="32" r="24" fill="url(#gp)"/><circle cx="38" cy="32" r="9" fill="#fff"/>'),
+    electron: svg('<ellipse cx="32" cy="32" rx="28" ry="10" fill="none" stroke="#3fd8ff" stroke-width="2" opacity=".75" transform="rotate(-25 32 32)"/><circle cx="32" cy="32" r="15" fill="#3fd8ff"/><circle cx="27" cy="27" r="5" fill="#bff3ff"/><text x="33" y="38" text-anchor="middle" font-family="Figtree, sans-serif" font-weight="700" font-size="14" fill="#06202b">e⁻</text>'),
+    token: svg('<rect x="12" y="14" width="40" height="36" rx="9" fill="#b18cff"/><rect x="12" y="14" width="40" height="12" rx="9" fill="#d4c2ff" opacity=".5"/><text x="32" y="40" text-anchor="middle" font-family="Figtree, sans-serif" font-weight="800" font-size="17" fill="#1f1340">tok</text>'),
+  };
+  const I = {
+    dust: svg('<path d="M5 13 L8 5 L15 4 L19 10 L15 18 L8 18 Z" fill="#8a8278"/>', 22),
+    cloud: svg('<path d="M6 17 a4 4 0 0 1 0-8 a6 6 0 0 1 11-1 a4.5 4.5 0 0 1 0 9 Z" fill="#eef3fb"/>', 22),
+    resistor: svg('<path d="M1 11 h4 l2-5 3 10 3-10 3 10 2-5 h3" fill="none" stroke="#ff4a2a" stroke-width="2.2" stroke-linejoin="round"/>', 22),
+    heat: svg('<path d="M11 2 c4 5 7 8 7 12 a7 7 0 0 1-14 0 c0-3 2-5 3-7 c1 3 2 4 3 4 c0-3 0-6 1-9 Z" fill="#ff7a2a"/>', 22),
+    stall: svg('<rect x="4" y="4" width="14" height="14" rx="2" fill="#0c1410" stroke="#5cff8f" stroke-width="1.6"/>', 22),
+    spark: svg('<path d="M11 2 L15 11 L11 20 L7 11 Z" fill="#ffd27a"/>', 22),
+    beam: svg('<path d="M11 1 L13 9 L21 11 L13 13 L11 21 L9 13 L1 11 L9 9 Z" fill="#fff1a8"/>', 22),
+    charge: svg('<path d="M13 1 L4 13 h6 l-2 8 l9-12 h-6 Z" fill="#3fd8ff"/>', 22),
+    packet: svg('<path d="M11 2 L19 6 V16 L11 20 L3 16 V6 Z" fill="#b18cff"/><path d="M3 6 L11 10 L19 6 M11 10 V20" fill="none" stroke="#2a1f4a" stroke-width="1.2"/>', 22),
+    word: svg('<rect x="1" y="5" width="20" height="12" rx="4" fill="#b18cff"/><text x="11" y="14.5" text-anchor="middle" font-family="Figtree, sans-serif" font-weight="800" font-size="8" fill="#1f1340">Aa</text>', 22),
+    ring: svg('<circle cx="11" cy="11" r="8" fill="none" stroke="#7dffa5" stroke-width="2.6"/>', 22),
+  };
+  const TILES = [
+    ['#ffd27a', 'photon', 'Leaving the Sun', [['Dodge', 'dust', 'space dust'], ['Grab', 'spark', 'light']]],
+    ['#fff1a8', 'photon', 'The West Texas sky', [['Dodge', 'cloud', 'clouds'], ['Grab', 'beam', 'sunbeams']]],
+    ['#3fd8ff', 'electron', 'Silicon to the power bus', [['Dodge', 'resistor', 'hot resistors'], ['Grab', 'charge', 'charge'], ['Fly', 'ring', 'Battery, UPS']]],
+    ['#7fd0ff', 'electron', 'Into the REPACSS cluster', [['Dodge', 'heat', 'heat plumes'], ['Grab', 'packet', 'data packets'], ['Fly', 'ring', 'InfiniBand']]],
+    ['#b18cff', 'token', 'Tensor cores to tokens', [['Dodge', 'stall', 'stalls'], ['Grab', 'word', 'tokens']]],
+  ];
+  $('stages').innerHTML = TILES.map(([c, form, name, acts], i) => `<div class="stg" style="--c:${c}"><span class="n">${i + 1}</span><div class="fig">${FIG[form]}</div>
+    <div class="role">You are ${form === 'electron' ? 'an' : 'a'} ${form}</div><div class="nm">${name}</div>
+    <div class="do">${acts.map(([verb, icon, what]) => `<span><b>${verb}</b>${I[icon]}${what}</span>`).join('')}</div></div>`).join('');
 }
 let introDone = null;
 function playIntro(then) {
