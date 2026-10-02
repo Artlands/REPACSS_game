@@ -72,27 +72,27 @@
   .save input { user-select: text; -webkit-user-select: text; flex: 1 1 180px; min-width: 0; padding: 11px 12px; border-radius: 10px; border: 1px solid var(--line); background: rgba(255,255,255,.06); color: var(--ink); font: 600 16px/1 var(--body); }
   .save input:focus-visible { outline: 2px solid var(--tok); outline-offset: 1px; }
   .note { font-size: 14px; color: #d7c9ff; }
-  /* start screen: larger cards and type */
+  /* start and end screens share one layout: larger cards and type, scoreboard pinned right */
   /* the intro card fills the screen; the scoreboard is pinned as a full-height column on the right */
-  #ovStart { place-items: stretch; }
-  #ovStart .ovrow { display: grid; grid-template-columns: minmax(0, 1fr) clamp(340px, 27vw, 480px); gap: 22px; width: 100%; min-height: 100%; align-items: stretch; }
-  #ovStart .ovrow > .card { padding: clamp(22px, 4vw, 48px); gap: 18px; border-radius: 22px; width: auto; }
-  #ovStart .ovrow > .card:first-child { align-self: center; justify-self: center; width: 100%; max-width: 920px; }
-  #ovStart .ovrow > .board { align-content: start; overflow-y: auto; }
-  #ovStart .card p { max-width: 75ch; }
-  @media (max-width: 900px) { #ovStart .ovrow { grid-template-columns: 1fr; } #ovStart .ovrow > .board { overflow: visible; } }
-  #ovStart .card h1 { font-size: clamp(64px, 12vw, 128px); }
-  #ovStart .card p, #ovStart .card ol { font-size: clamp(16px, 1.4vw, 19px); }
-  #ovStart .card .k { font-size: 13px; }
-  #ovStart .save input { font-size: 19px; padding: 14px 16px; }
-  #ovStart .btn { font-size: 22px; padding: 15px 28px; }
-  #ovStart .lb { gap: 6px; }
-  #ovStart .lb li { grid-template-columns: 2.4ch 38px minmax(0, 1fr) auto; padding: 11px 14px; gap: 12px; }
-  #ovStart .lb img { width: 38px; height: 38px; }
-  #ovStart .lb .rk { font-size: 20px; }
-  #ovStart .lb .nm { font-size: 18px; }
-  #ovStart .lb .nm small { font-size: 13.5px; }
-  #ovStart .lb .sc { font-size: 22px; }
+  :is(#ovStart, #ovEnd) { place-items: stretch; }
+  :is(#ovStart, #ovEnd) .ovrow { display: grid; grid-template-columns: minmax(0, 1fr) clamp(340px, 27vw, 480px); gap: 22px; width: 100%; min-height: 100%; align-items: stretch; }
+  :is(#ovStart, #ovEnd) .ovrow > .card { padding: clamp(22px, 4vw, 48px); gap: 18px; border-radius: 22px; width: auto; }
+  :is(#ovStart, #ovEnd) .ovrow > .card:first-child { align-self: center; justify-self: center; width: 100%; max-width: 920px; }
+  :is(#ovStart, #ovEnd) .ovrow > .board { align-content: start; overflow-y: auto; }
+  :is(#ovStart, #ovEnd) .card p { max-width: 75ch; }
+  @media (max-width: 900px) { :is(#ovStart, #ovEnd) .ovrow { grid-template-columns: 1fr; } :is(#ovStart, #ovEnd) .ovrow > .board { overflow: visible; } }
+  :is(#ovStart, #ovEnd) .card h1 { font-size: clamp(64px, 12vw, 128px); }
+  :is(#ovStart, #ovEnd) .card p, :is(#ovStart, #ovEnd) .card ol { font-size: clamp(16px, 1.4vw, 19px); }
+  :is(#ovStart, #ovEnd) .card .k { font-size: 13px; }
+  :is(#ovStart, #ovEnd) .save input { font-size: 19px; padding: 14px 16px; }
+  :is(#ovStart, #ovEnd) .btn { font-size: 22px; padding: 15px 28px; }
+  :is(#ovStart, #ovEnd) .lb { gap: 6px; }
+  :is(#ovStart, #ovEnd) .lb li { grid-template-columns: 2.4ch 38px minmax(0, 1fr) auto; padding: 11px 14px; gap: 12px; }
+  :is(#ovStart, #ovEnd) .lb img { width: 38px; height: 38px; }
+  :is(#ovStart, #ovEnd) .lb .rk { font-size: 20px; }
+  :is(#ovStart, #ovEnd) .lb .nm { font-size: 18px; }
+  :is(#ovStart, #ovEnd) .lb .nm small { font-size: 13.5px; }
+  :is(#ovStart, #ovEnd) .lb .sc { font-size: 22px; }
   @media (prefers-reduced-motion: reduce) { .bar i, .banner { transition: none; } }
 </style>
 
