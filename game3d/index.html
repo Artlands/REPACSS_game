@@ -93,15 +93,28 @@
   :is(#ovStart, #ovEnd) .lb .nm { font-size: 18px; }
   :is(#ovStart, #ovEnd) .lb .nm small { font-size: 13.5px; }
   :is(#ovStart, #ovEnd) .lb .sc { font-size: 22px; }
-  #ovIntro { background: #000; padding: 0; place-items: stretch; }
-  .vwrap { position: relative; display: grid; place-items: center; min-height: 100%; }
-  .vwrap video { width: 100%; height: 100%; max-height: 100vh; object-fit: contain; background: #000; }
-  .vwrap video::cue { font: 500 clamp(16px, 2.2vw, 26px)/1.35 var(--body); background: rgba(0,0,0,.65); }
-  .vbar { position: absolute; left: 0; right: 0; top: 0; display: flex; justify-content: space-between; align-items: center; gap: 12px;
-    padding: calc(14px + env(safe-area-inset-top, 0px)) 18px 14px; background: linear-gradient(rgba(0,0,0,.65), rgba(0,0,0,0)); }
-  .vbar .k { font: 600 12px/1 var(--body); letter-spacing: .2em; text-transform: uppercase; color: #c7cfe2; }
-  .vbar .btn { font-size: 17px; padding: 11px 18px; }
-  .vprog { position: absolute; left: 0; bottom: 0; height: 4px; background: linear-gradient(90deg, var(--sun), var(--elec), var(--tok)); width: 0; }
+  /* intro as a mission briefing: a framed player over the blurred game scene, then a 3-2-1 launch */
+  #ovIntro { background: rgba(3,5,11,.72); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+  .brief { width: min(1120px, 100%, calc((100vh - 230px) * 16 / 9)); min-width: min(320px, 100%); display: grid; gap: 14px; }
+  .brief-top { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+  .brief-top .k { font: 600 12px/1 var(--body); letter-spacing: .22em; text-transform: uppercase; color: var(--sun); }
+  .brief-top h2 { margin: 6px 0 0; font: 700 clamp(26px, 3.4vw, 40px)/1 var(--display); }
+  .brief-top .r { display: flex; align-items: center; gap: 10px; }
+  .brief-top .left { font: 700 18px/1 var(--mono); color: var(--dim); font-variant-numeric: tabular-nums; }
+  .vframe { position: relative; aspect-ratio: 16 / 9; border-radius: 18px; overflow: hidden; background: #000; border: 1px solid rgba(255,255,255,.14);
+    box-shadow: 0 30px 90px rgba(0,0,0,.65), 0 0 60px rgba(255,181,60,.12); }
+  .vframe video { display: block; width: 100%; height: 100%; object-fit: cover; transition: filter .6s, transform .6s; }
+  .vframe video::cue { font: 500 clamp(14px, 1.9vw, 22px)/1.35 var(--body); background: rgba(0,0,0,.6); }
+  .vframe.done video { filter: brightness(.35) blur(2px); transform: scale(1.03); }
+  .count { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; font: 700 clamp(90px, 16vw, 200px)/1 var(--display);
+    color: #fff; text-shadow: 0 0 40px rgba(255,210,122,.8); }
+  .count i { font-style: normal; animation: pop .9s ease-out both; }
+  @keyframes pop { from { transform: scale(1.6); opacity: 0; } 25% { transform: scale(1); opacity: 1; } 80% { opacity: 1; } to { transform: scale(.92); opacity: .6; } }
+  .brief-bot { display: grid; gap: 8px; }
+  .vprog { height: 5px; border-radius: 3px; background: rgba(255,255,255,.1); overflow: hidden; }
+  .vprog i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--sun), var(--elec), var(--tok)); }
+  .brief-bot .hint { text-align: center; }
+  @media (prefers-reduced-motion: reduce) { .count i { animation: none; } .vframe video { transition: none; } }
   .linkbtn { background: none; border: 0; padding: 0; color: var(--elec); font: 600 15px/1.4 var(--body); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
   :is(#ovStart, #ovEnd) .lb li.none { grid-template-columns: 1fr; padding: 4px 0; font-size: 16px; }
   .logo { display: block; height: auto; }
@@ -165,11 +178,17 @@
     <div class="card board"><div class="k bk">Top 10 pilots</div><ol class="lb"></ol></div></div>
   </div>
   <div class="ov" id="ovEnd" hidden><div class="ovrow"><div class="card" id="endCard"></div><div class="card board"><div class="k bk">Top 10 pilots</div><ol class="lb"></ol></div></div></div>
-  <div class="ov" id="ovIntro" hidden><div class="vwrap">
-    <video id="introV" playsinline preload="metadata"><source src="intro.mp4" type="video/mp4"></video>
-    <div class="vbar"><span class="k">REPACSS in 45 seconds · your run starts right after</span></div>
-    <button class="btn" id="vplay" hidden style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:24px;padding:18px 32px">Play the intro</button>
-    <div class="vprog" id="vprog"></div>
+  <div class="ov" id="ovIntro" hidden><div class="brief">
+    <div class="brief-top">
+      <div><div class="k" id="briefK">Mission briefing</div><h2>From photons to tokens: REPACSS in 45 seconds</h2></div>
+      <div class="r"><span class="left" id="vleft">0:46</span><button class="ib" id="vmute" aria-label="Mute the briefing" title="Mute">♪</button></div>
+    </div>
+    <div class="vframe" id="vframe">
+      <video id="introV" playsinline preload="auto"><source src="intro.mp4" type="video/mp4"></video>
+      <button class="btn" id="vplay" hidden style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:24px;padding:18px 32px">Play the briefing</button>
+      <div class="count" id="count" aria-live="assertive"></div>
+    </div>
+    <div class="brief-bot"><div class="vprog"><i id="vprog"></i></div><div class="hint">Your run launches when the briefing ends</div></div>
   </div></div>
   <div class="ov" id="ovPause" hidden><div class="card"><div class="k">Paused</div><p>Your score so far still counts if you end the run now.</p><div class="btns"><button class="btn" id="resume">Resume</button><button class="btn" id="endRun" style="background:transparent;color:var(--alarm);border:1px solid var(--alarm)">End run</button><span class="hint">P resumes · E ends the run</span></div></div></div>
   <button class="ib" id="fs" aria-label="Full screen" title="Full screen (F)" hidden><svg viewBox="0 0 24 24"><path id="fsIcon" d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
@@ -463,6 +482,8 @@ const INTRO_CUES = [
 let introDone = null;
 function playIntro(then) {
   const v = $('introV'); introDone = then;
+  $('briefK').textContent = `Mission briefing · Pilot ${state.player}`;
+  $('vframe').classList.remove('done'); $('count').replaceChildren(); $('vprog').style.width = '0';
   $('ovStart').hidden = true; $('ovIntro').hidden = false; v.currentTime = 0;
   const go = () => v.play().then(() => { $('vplay').hidden = true; }).catch(() => { $('vplay').hidden = false; $('vplay').focus(); });   // autoplay refused: ask for one tap
   $('vplay').onclick = go; go();
@@ -471,9 +492,24 @@ function endIntro() {
   const v = $('introV'); if ($('ovIntro').hidden) return;
   v.pause(); $('ovIntro').hidden = true; const t = introDone; introDone = null; t?.();
 }
-$('introV').addEventListener('ended', endIntro);
+// when the briefing ends: dim the frame, count 3-2-1 with tones, then launch
+$('introV').addEventListener('ended', () => {
+  $('vframe').classList.add('done'); let n = 3;
+  const step = () => {
+    if ($('ovIntro').hidden) return;
+    if (!n) { endIntro(); return; }
+    const i = document.createElement('i'); i.textContent = n; $('count').replaceChildren(i);
+    try { ac ??= new (window.AudioContext || window.webkitAudioContext)(); ac.resume(); } catch {}
+    tone(n === 1 ? 880 : 520, n === 1 ? 1320 : 520, .18, 'triangle', .07); n--; setTimeout(step, 800);
+  };
+  step();
+});
+$('vmute').onclick = () => { const v = $('introV'); v.muted = !v.muted; $('vmute').style.opacity = v.muted ? .45 : 1; $('vmute').setAttribute('aria-label', v.muted ? 'Unmute the briefing' : 'Mute the briefing'); };
 $('introV').addEventListener('error', endIntro, true);   // missing video: go straight on
-$('introV').addEventListener('timeupdate', (e) => { $('vprog').style.width = (e.target.currentTime / (e.target.duration || 46) * 100) + '%'; });
+$('introV').addEventListener('timeupdate', (e) => {
+  const d = e.target.duration || 46, t = e.target.currentTime, left = Math.max(0, Math.ceil(d - t));
+  $('vprog').style.width = (t / d * 100) + '%'; $('vleft').textContent = `0:${String(left).padStart(2, '0')}`;
+});
 
 // ---------- scoreboard: one shared top 10 on claude.ai, this device otherwise ----------
 // Shared mode keeps one document per player at scores/<their id> holding their best run; everyone reads, each writes only their own.
