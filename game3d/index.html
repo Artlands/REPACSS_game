@@ -73,11 +73,14 @@
   .save input:focus-visible { outline: 2px solid var(--tok); outline-offset: 1px; }
   .note { font-size: 14px; color: #d7c9ff; }
   /* start screen: larger cards and type */
-  #ovStart .ovrow { width: min(1640px, 100%); gap: 22px; }
-  #ovStart .ovrow > .card { flex: 1 1 680px; padding: clamp(22px, 4vw, 44px); gap: 18px; border-radius: 22px; }
-  #ovStart .ovrow > .board { flex: 0 1 500px; }
-  #ovStart .ovrow > .card:first-child { flex: 3 1 820px; }   /* grows wide but still sits beside the board on a 1440px laptop */
-  #ovStart .card p { max-width: 82ch; }
+  /* the intro card fills the screen; the scoreboard is pinned as a full-height column on the right */
+  #ovStart { place-items: stretch; }
+  #ovStart .ovrow { display: grid; grid-template-columns: minmax(0, 1fr) clamp(340px, 27vw, 480px); gap: 22px; width: 100%; min-height: 100%; align-items: stretch; }
+  #ovStart .ovrow > .card { padding: clamp(22px, 4vw, 48px); gap: 18px; border-radius: 22px; width: auto; }
+  #ovStart .ovrow > .card:first-child { align-self: center; }
+  #ovStart .ovrow > .board { align-content: start; overflow-y: auto; }
+  #ovStart .card p { max-width: 100ch; }
+  @media (max-width: 900px) { #ovStart .ovrow { grid-template-columns: 1fr; } #ovStart .ovrow > .board { overflow: visible; } }
   #ovStart .card h1 { font-size: clamp(64px, 12vw, 128px); }
   #ovStart .card p, #ovStart .card ol { font-size: clamp(16px, 1.4vw, 19px); }
   #ovStart .card .k { font-size: 13px; }
