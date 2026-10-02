@@ -6,7 +6,7 @@ Usage (after `node render.mjs video` has produced build/REPACSS_photons_to_token
 import json, shutil, subprocess, sys
 
 SRC = "build/REPACSS_photons_to_tokens_nomusic.mp4"
-# clip id -> source segments [(start s, length s or None = whatever is left of the clip)]
+# clip id -> source segments [(start s, length s or None = whatever is left of the clip)]; ("hold", t) freezes the frame at t
 CLIPS = {
     "c_sun": [(9.8, None)],                    # the Sun, a photon crossing to Earth
     "c_dive": [(26.3, None)],                  # zoom into West Texas
@@ -14,7 +14,7 @@ CLIPS = {
     "c_energy": [(108.0, None)],               # microgrid: a cloud passes, the battery discharges
     "c_photon": [(150.4, None)],               # photovoltaic conversion in the cell
     "c_compute": [(189.6, 3.4), (245.0, None)],  # the REPACSS racks, then H100 tensor cores
-    "c_outro": [(410.8, None)],                # end card with the REPACSS logo
+    "c_outro": [(412.5, 6.1), ("hold", 418.6)],  # end card: the REPACSS logo builds in, then holds so it can be read
 }
 
 tl = json.load(open("timeline_game_intro.json"))
@@ -22,9 +22,13 @@ parts, labels = [], []
 for sc in tl["scenes"]:
     left = sc["dur"]
     for start, length in CLIPS[sc["id"]]:
-        n = min(left, length or left); left -= n
         k = len(parts)
-        parts.append(f"[0:v]trim=start={start}:duration={n:.3f},setpts=PTS-STARTPTS,scale=1280:720,fps=30[v{k}]")
+        if start == "hold":
+            n = left; left = 0
+            parts.append(f"[0:v]trim=start={length}:duration=0.04,setpts=PTS-STARTPTS,scale=1280:720,fps=30,tpad=stop_mode=clone:stop_duration={n:.3f},trim=duration={n:.3f}[v{k}]")
+        else:
+            n = min(left, length or left); left -= n
+            parts.append(f"[0:v]trim=start={start}:duration={n:.3f},setpts=PTS-STARTPTS,scale=1280:720,fps=30[v{k}]")
         labels.append(f"[v{k}]")
     assert left < 1e-6, f"{sc['id']}: segments are {left:.2f} s short"
 T = tl["total"]

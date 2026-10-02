@@ -112,15 +112,15 @@ SCRIPT = [
     ]),
 ]
 
-# Intro for the Photon Dash game: ~45 s, one sentence per clip cut from the Photons to Tokens render (game3d/make_intro.py)
+# Intro for the Photon Dash game: 45 s, one sentence per clip cut from the Photons to Tokens render (game3d/make_intro.py)
 GAME_INTRO = [
-    ("c_sun", 1.0, 0.3, ["Every answer an AI gives you is built from tokens, and every token starts as energy."]),
-    ("c_dive", 0.3, 0.3, ["At Texas Tech University, a supercomputer called REPACSS takes much of its energy straight from the sun."]),
-    ("c_site", 0.3, 0.3, ["It lives at GLEAMM, a microgrid lab on the West Texas plains, beside a 350 kilowatt solar array."]),
-    ("c_energy", 0.3, 0.3, ["When clouds roll over, a battery, the power grid, and a diesel generator step in."]),
-    ("c_photon", 0.3, 0.3, ["Sunlight frees electrons in silicon, and those electrons flow into the cluster."]),
-    ("c_compute", 0.3, 0.3, ["There, thousands of processor cores and powerful GPUs turn electricity into science, and into tokens."]),
-    ("c_outro", 0.3, 2.0, ["In Photon Dash, you are that photon. Fly from the sun to a token, and see how far your energy takes you."]),
+    ("c_sun", 0.6, 0.15, ["Every answer an AI gives you is built from tokens, and every token starts as energy."]),
+    ("c_dive", 0.15, 0.15, ["At Texas Tech University, a supercomputer called REPACSS takes much of its energy straight from the sun."]),
+    ("c_site", 0.15, 0.15, ["It lives at GLEAMM, a microgrid lab on the West Texas plains, beside a 350 kilowatt solar array."]),
+    ("c_energy", 0.15, 0.15, ["When clouds roll over, a battery, the power grid, and a diesel generator step in."]),
+    ("c_photon", 0.15, 0.15, ["Sunlight frees electrons in silicon, and those electrons flow into the cluster."]),
+    ("c_compute", 0.15, 0.15, ["There, thousands of processor cores and powerful GPUs turn electricity into science, and into tokens."]),
+    ("c_outro", 0.15, 3.0, ["In Photon Dash, you are that photon. Fly from the sun to a token, and see how far your energy takes you."]),
 ]
 STORIES = {"photons": SCRIPT, "game_intro": GAME_INTRO}
 STORY = sys.argv[1] if len(sys.argv) > 1 else "photons"

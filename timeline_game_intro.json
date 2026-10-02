@@ -1,86 +1,86 @@
 {
- "total": 46.172,
+ "total": 44.972,
  "scenes": [
   {
    "id": "c_sun",
    "start": 0.0,
-   "dur": 6.175,
+   "dur": 5.625,
    "sentences": [
     {
-     "start": 1.0,
-     "end": 5.875,
+     "start": 0.6,
+     "end": 5.475,
      "text": "Every answer an AI gives you is built from tokens, and every token starts as energy."
     }
    ]
   },
   {
    "id": "c_dive",
-   "start": 6.175,
-   "dur": 6.233,
+   "start": 5.625,
+   "dur": 5.933,
    "sentences": [
     {
-     "start": 0.3,
-     "end": 5.933,
+     "start": 0.15,
+     "end": 5.783,
      "text": "At Texas Tech University, a supercomputer called REPACSS takes much of its energy straight from the sun."
     }
    ]
   },
   {
    "id": "c_site",
-   "start": 12.408,
-   "dur": 7.288,
+   "start": 11.558,
+   "dur": 6.988,
    "sentences": [
     {
-     "start": 0.3,
-     "end": 6.988,
+     "start": 0.15,
+     "end": 6.838,
      "text": "It lives at GLEAMM, a microgrid lab on the West Texas plains, beside a 350 kilowatt solar array."
     }
    ]
   },
   {
    "id": "c_energy",
-   "start": 19.696,
-   "dur": 5.508,
+   "start": 18.546,
+   "dur": 5.208,
    "sentences": [
     {
-     "start": 0.3,
-     "end": 5.208,
+     "start": 0.15,
+     "end": 5.058,
      "text": "When clouds roll over, a battery, the power grid, and a diesel generator step in."
     }
    ]
   },
   {
    "id": "c_photon",
-   "start": 25.204,
-   "dur": 5.146,
+   "start": 23.754,
+   "dur": 4.846,
    "sentences": [
     {
-     "start": 0.3,
-     "end": 4.846,
+     "start": 0.15,
+     "end": 4.696,
      "text": "Sunlight frees electrons in silicon, and those electrons flow into the cluster."
     }
    ]
   },
   {
    "id": "c_compute",
-   "start": 30.35,
-   "dur": 7.0,
+   "start": 28.6,
+   "dur": 6.7,
    "sentences": [
     {
-     "start": 0.3,
-     "end": 6.7,
+     "start": 0.15,
+     "end": 6.55,
      "text": "There, thousands of processor cores and powerful GPUs turn electricity into science, and into tokens."
     }
    ]
   },
   {
    "id": "c_outro",
-   "start": 37.35,
-   "dur": 8.822,
+   "start": 35.3,
+   "dur": 9.672,
    "sentences": [
     {
-     "start": 0.3,
-     "end": 6.822,
+     "start": 0.15,
+     "end": 6.672,
      "text": "In Photon Dash, you are that photon. Fly from the sun to a token, and see how far your energy takes you."
     }
    ]

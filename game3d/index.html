@@ -143,7 +143,9 @@
   .stg .do b { font-weight: 600; color: var(--dim); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; min-width: 4.2em; }
   .stg:not(:last-child)::after { content: "›"; position: absolute; right: -9px; top: 38px; font: 700 18px/1 var(--body); color: var(--dim); }
   @media (max-width: 1100px) { .stages { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); } .stg::after { display: none; } }
-  .logo-end { width: 180px; }
+  .logo-end { width: 180px; margin: 0 auto; }
+  #endCard .btns { justify-content: center; }
+  #endCard .btns .hint { flex-basis: 100%; text-align: center; }
   .logo-hud { position: absolute; left: 16px; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); width: clamp(96px, 10vw, 150px); opacity: .55; pointer-events: none; }
   #fs { position: absolute; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 5; width: 44px; height: 44px; display: grid; place-items: center; }
   #app:not(.playing) .hud { visibility: hidden; }
@@ -184,7 +186,7 @@
       <div class="stages" id="stages" aria-label="The five stages and your role in each"></div>
       <p>Your energy drains as you fly. Collect glowing pickups to refill it, and fly through rings for bonuses.</p>
       <form class="save" id="startForm"><label for="pilot" class="k" style="flex-basis:100%">Your pilot name · shown on the scoreboard</label><input id="pilot" maxlength="24" autocomplete="nickname" placeholder="Enter your name" required><button class="btn" id="go" type="submit">Launch</button></form>
-      <div class="hint">Steer with the mouse, a finger, or arrow keys / WASD · P pauses · F full screen · Every run starts with a 45-second REPACSS intro</div>
+      <div class="hint">Steer with the mouse, a finger, or arrow keys / WASD · P pauses · F full screen · Every run starts with a 45-second REPACSS briefing</div>
       <div class="foot">Facility figures follow REPACSS at the GLEAMM microgrid, Reese Technology Center. Supported by the U.S. National Science Foundation under Grant No. 2404438 · repacss.org</div>
     </div>
     <div class="card board"><div class="k bk">Top 10 pilots</div><ol class="lb"></ol></div></div>
@@ -193,7 +195,7 @@
   <div class="ov" id="ovIntro" hidden><div class="brief">
     <div class="brief-top">
       <div><div class="k" id="briefK">Mission briefing</div><h2>From photons to tokens: REPACSS in 45 seconds</h2></div>
-      <div class="r"><span class="left" id="vleft">0:46</span><button class="ib" id="vmute" aria-label="Mute the briefing" title="Mute">♪</button></div>
+      <div class="r"><span class="left" id="vleft">0:45</span><button class="ib" id="vmute" aria-label="Mute the briefing" title="Mute">♪</button></div>
     </div>
     <div class="vframe" id="vframe">
       <video id="introV" playsinline preload="auto"><source src="intro.mp4" type="video/mp4"></video>
@@ -448,13 +450,13 @@ $('startForm').onsubmit = (e) => {
 };
 // ---------- intro video: a 45-second REPACSS mission briefing before every launch from the start screen ----------
 const INTRO_CUES = [
-  [1.0, 5.88, "Every answer an AI gives you is built from tokens, and every token starts as energy."],
-  [6.47, 12.11, "At Texas Tech University, a supercomputer called REPACSS takes much of its energy straight from the sun."],
-  [12.71, 19.4, "It lives at GLEAMM, a microgrid lab on the West Texas plains, beside a 350 kilowatt solar array."],
-  [20.0, 24.9, "When clouds roll over, a battery, the power grid, and a diesel generator step in."],
-  [25.5, 30.05, "Sunlight frees electrons in silicon, and those electrons flow into the cluster."],
-  [30.65, 37.05, "There, thousands of processor cores and powerful GPUs turn electricity into science, and into tokens."],
-  [37.65, 44.17, "In Photon Dash, you are that photon. Fly from the sun to a token, and see how far your energy takes you."],
+  [0.6, 5.47, "Every answer an AI gives you is built from tokens, and every token starts as energy."],
+  [5.78, 11.41, "At Texas Tech University, a supercomputer called REPACSS takes much of its energy straight from the sun."],
+  [11.71, 18.4, "It lives at GLEAMM, a microgrid lab on the West Texas plains, beside a 350 kilowatt solar array."],
+  [18.7, 23.6, "When clouds roll over, a battery, the power grid, and a diesel generator step in."],
+  [23.9, 28.45, "Sunlight frees electrons in silicon, and those electrons flow into the cluster."],
+  [28.75, 35.15, "There, thousands of processor cores and powerful GPUs turn electricity into science, and into tokens."],
+  [35.45, 41.97, "In Photon Dash, you are that photon. Fly from the sun to a token, and see how far your energy takes you."],
 ];   // from build/captions_game_intro.srt (narration.py game_intro)
 { // captions: a hidden text track (artifacts don't serve .vtt files) drives a line under the frame,
   // so they never sit on top of the on-screen labels baked into the footage
@@ -522,7 +524,7 @@ $('introV').addEventListener('ended', () => {
 $('vmute').onclick = () => { const v = $('introV'); v.muted = !v.muted; $('vmute').style.opacity = v.muted ? .45 : 1; $('vmute').setAttribute('aria-label', v.muted ? 'Unmute the briefing' : 'Mute the briefing'); };
 $('introV').addEventListener('error', endIntro, true);   // missing video: go straight on
 $('introV').addEventListener('timeupdate', (e) => {
-  const d = e.target.duration || 46, t = e.target.currentTime, left = Math.max(0, Math.ceil(d - t));
+  const d = e.target.duration || 45, t = e.target.currentTime, left = Math.max(0, Math.ceil(d - t));
   $('vprog').style.width = (t / d * 100) + '%'; $('vleft').textContent = `0:${String(left).padStart(2, '0')}`;
 });
 
@@ -628,7 +630,7 @@ async function recordScore(run) {
 }
 
 function gameOver(early = false) {
-  state.mode = 'over'; $('app').classList.remove('playing'); tone(440, 60, 1.2, 'sawtooth', .06);
+  state.mode = 'over'; $('app').classList.remove('playing'); $('banner').style.opacity = 0; tone(440, 60, 1.2, 'sawtooth', .06);
   const sc = Math.floor(state.score), isBest = sc > state.best; if (isBest) { state.best = sc; try { localStorage.setItem('photon-dash-best', sc); } catch {} }
   const st = STAGES[state.stage], form = { photon: 'photon', electron: 'electron', token: 'token' }[st.form];
   $('endCard').innerHTML = `<img class="logo logo-end" src="repacss-red.svg" alt="REPACSS"><div class="k">Run over · ${early ? 'you ended the run' : `${form} ran out of energy`}</div>
