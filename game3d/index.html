@@ -106,6 +106,7 @@
         <div class="score"><div class="k">Score</div><div class="v" id="score">0</div></div>
         <button class="ib" id="mute" aria-label="Sound off">♪</button>
         <button class="ib" id="pause" aria-label="Pause">II</button>
+        <button class="ib" id="quit" aria-label="End run" title="End run" style="width:auto;padding:0 12px">End</button>
       </div>
     </div>
     <div></div>
@@ -136,7 +137,7 @@
     <div class="card board"><div class="k bk">Top 10 pilots</div><ol class="lb"></ol></div></div>
   </div>
   <div class="ov" id="ovEnd" hidden><div class="ovrow"><div class="card" id="endCard"></div><div class="card board"><div class="k bk">Top 10 pilots</div><ol class="lb"></ol></div></div></div>
-  <div class="ov" id="ovPause" hidden><div class="card"><div class="k">Paused</div><div class="btns"><button class="btn" id="resume">Resume</button><span class="hint">or press P</span></div></div></div>
+  <div class="ov" id="ovPause" hidden><div class="card"><div class="k">Paused</div><p>Your score so far still counts if you end the run now.</p><div class="btns"><button class="btn" id="resume">Resume</button><button class="btn" id="endRun" style="background:transparent;color:var(--alarm);border:1px solid var(--alarm)">End run</button><span class="hint">P resumes · E ends the run</span></div></div></div>
 </div>
 
 <script type="importmap">
@@ -343,6 +344,10 @@ addEventListener('keyup', (e) => keys.delete(e.key.toLowerCase()));
 function setPause(p) { state.paused = p; $('ovPause').hidden = !p; if (p) $('resume').focus(); last = performance.now(); }
 $('pause').onclick = () => state.mode === 'play' && setPause(!state.paused);
 $('resume').onclick = () => setPause(false);
+// ending early: the End button pauses first and asks, so a stray tap can't throw a run away
+$('quit').onclick = () => { if (state.mode === 'play') { setPause(true); $('endRun').focus(); } };
+$('endRun').onclick = () => { if (state.mode === 'play') { setPause(false); gameOver(true); } };
+addEventListener('keydown', (e) => { if ((e.key === 'e' || e.key === 'E') && state.mode === 'play' && state.paused) $('endRun').click(); });
 document.addEventListener('visibilitychange', () => { if (document.hidden && state.mode === 'play') setPause(true); });
 function launch() {
   if (!state.player) { showStart(); return; }
@@ -412,11 +417,11 @@ async function recordScore(run) {
   note.textContent = `Saved. ${run.name} is #${board.rows.findIndex(r => r.at === at) + 1} on this device.`; renderBoards();
 }
 
-function gameOver() {
+function gameOver(early = false) {
   state.mode = 'over'; tone(440, 60, 1.2, 'sawtooth', .06);
   const sc = Math.floor(state.score), isBest = sc > state.best; if (isBest) { state.best = sc; try { localStorage.setItem('photon-dash-best', sc); } catch {} }
   const st = STAGES[state.stage], form = { photon: 'photon', electron: 'electron', token: 'token' }[st.form];
-  $('endCard').innerHTML = `<div class="k">Run over · ${form} ran out of energy</div>
+  $('endCard').innerHTML = `<div class="k">Run over · ${early ? 'you ended the run' : `${form} ran out of energy`}</div>
     <div class="big">${sc.toLocaleString('en-US')}</div>
     <p>${isBest ? 'New best on this device.' : `Best on this device: <b>${state.best.toLocaleString('en-US')}</b>.`} You reached <b>${st.title}</b>${state.lap ? ` on lap ${state.lap + 1}` : ''}.</p>
     <div class="stats"><div>Distance<b>${Math.floor(state.d / 10).toLocaleString('en-US')} m</b></div><div>Pickups<b>${state.picks}</b></div><div>Rings<b>${state.rings}</b></div><div>Tokens<b>${state.tokens}</b></div><div>Hits<b>${state.hits}</b></div></div>
