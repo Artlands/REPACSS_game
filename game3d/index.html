@@ -195,14 +195,14 @@
   <div class="ov" id="ovIntro" hidden><div class="brief">
     <div class="brief-top">
       <div><div class="k" id="briefK">Mission briefing</div><h2>From photons to tokens: REPACSS in 45 seconds</h2></div>
-      <div class="r"><span class="left" id="vleft">0:45</span><button class="ib" id="vmute" aria-label="Mute the briefing" title="Mute">♪</button></div>
+      <div class="r"><span class="left" id="vleft">0:45</span><button class="ib" id="vmute" aria-label="Mute the briefing" title="Mute">♪</button><button class="ib" id="vskip" title="Skip the briefing (Esc)" style="width:auto;padding:0 14px">Skip ›</button></div>
     </div>
     <div class="vframe" id="vframe">
       <video id="introV" playsinline preload="auto"><source src="intro.mp4" type="video/mp4"></video>
       <button class="btn" id="vplay" hidden style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:24px;padding:18px 32px">Play the briefing</button>
       <div class="count" id="count" aria-live="assertive"></div>
     </div>
-    <div class="brief-bot"><div class="vcap" id="vcap" aria-live="polite"></div><div class="vprog"><i id="vprog"></i></div><div class="hint">Your run launches when the briefing ends</div></div>
+    <div class="brief-bot"><div class="vcap" id="vcap" aria-live="polite"></div><div class="vprog"><i id="vprog"></i></div><div class="hint">Your run launches when the briefing ends · Skip or Esc to go now</div></div>
   </div></div>
   <div class="ov" id="ovPause" hidden><div class="card"><div class="k">Paused</div><p>Your score so far still counts if you end the run now.</p><div class="btns"><button class="btn" id="resume">Resume</button><button class="btn" id="endRun" style="background:transparent;color:var(--alarm);border:1px solid var(--alarm)">End run</button><span class="hint">P resumes · E ends the run</span></div></div></div>
   <button class="ib" id="fs" aria-label="Full screen" title="Full screen (F)" hidden><svg viewBox="0 0 24 24"><path id="fsIcon" d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
@@ -500,7 +500,7 @@ let introDone = null;
 function playIntro(then) {
   const v = $('introV'); introDone = then;
   $('briefK').textContent = `Mission briefing · Pilot ${state.player}`;
-  $('vframe').classList.remove('done'); $('count').replaceChildren(); $('vcap').textContent = ''; $('vprog').style.width = '0';
+  $('vframe').classList.remove('done'); $('count').replaceChildren(); $('vcap').textContent = ''; $('vskip').disabled = false; counting = false; $('vprog').style.width = '0';
   $('ovStart').hidden = true; $('ovIntro').hidden = false; v.currentTime = 0;
   const go = () => v.play().then(() => { $('vplay').hidden = true; }).catch(() => { $('vplay').hidden = false; $('vplay').focus(); });   // autoplay refused: ask for one tap
   $('vplay').onclick = go; go();
@@ -509,18 +509,23 @@ function endIntro() {
   const v = $('introV'); if ($('ovIntro').hidden) return;
   v.pause(); $('ovIntro').hidden = true; const t = introDone; introDone = null; t?.();
 }
-// when the briefing ends: dim the frame, count 3-2-1 with tones, then launch
-$('introV').addEventListener('ended', () => {
-  $('vframe').classList.add('done'); let n = 3;
+// when the briefing ends (or is skipped): dim the frame, count 3-2-1 with tones, then launch
+let counting = false;
+function countdown() {
+  if (counting || $('ovIntro').hidden) return; counting = true;
+  $('introV').pause(); $('vskip').disabled = true; $('vframe').classList.add('done'); let n = 3;
   const step = () => {
     if ($('ovIntro').hidden) return;
-    if (!n) { endIntro(); return; }
+    if (!n) { counting = false; endIntro(); return; }
     const i = document.createElement('i'); i.textContent = n; $('count').replaceChildren(i);
     try { ac ??= new (window.AudioContext || window.webkitAudioContext)(); ac.resume(); } catch {}
     tone(n === 1 ? 880 : 520, n === 1 ? 1320 : 520, .18, 'triangle', .07); n--; setTimeout(step, 800);
   };
   step();
-});
+}
+$('introV').addEventListener('ended', countdown);
+$('vskip').onclick = countdown;
+addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('ovIntro').hidden) { e.preventDefault(); countdown(); } });
 $('vmute').onclick = () => { const v = $('introV'); v.muted = !v.muted; $('vmute').style.opacity = v.muted ? .45 : 1; $('vmute').setAttribute('aria-label', v.muted ? 'Unmute the briefing' : 'Mute the briefing'); };
 $('introV').addEventListener('error', endIntro, true);   // missing video: go straight on
 $('introV').addEventListener('timeupdate', (e) => {
