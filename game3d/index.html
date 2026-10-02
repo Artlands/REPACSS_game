@@ -108,7 +108,8 @@
         <li><b>Tensor cores</b> · collect the tokens in order</li>
       </ol>
       <p>Your energy drains as you fly. Collect glowing pickups to refill it, and fly through rings for bonuses.</p>
-      <div class="btns"><button class="btn" id="go">Launch</button><span class="hint">Steer with the mouse, a finger, or arrow keys / WASD · P pauses</span></div>
+      <form class="save" id="startForm"><label for="pilot" class="k" style="flex-basis:100%">Your pilot name · shown on the scoreboard</label><input id="pilot" maxlength="24" autocomplete="nickname" placeholder="Enter your name" required><button class="btn" id="go" type="submit">Launch</button></form>
+      <div class="hint">Steer with the mouse, a finger, or arrow keys / WASD · P pauses</div>
       <div class="foot">Facility figures follow REPACSS at the GLEAMM microgrid, Reese Technology Center. Supported by the U.S. National Science Foundation under Grant No. 2404438 · repacss.org</div>
     </div>
     <div class="card board"><div class="k bk">Top 10 pilots</div><ol class="lb"></ol></div></div>
@@ -272,7 +273,7 @@ const stageAt = (d) => Math.floor(d / PHASE_LEN) % STAGES.length, lapAt = (d) =>
 
 function reset(mode) {
   for (const it of items) scene.remove(it.obj); items.length = 0;
-  Object.assign(state, { mode, d: 0, speed: 30, energy: 100, score: 0, stage: 0, lap: 0, tokens: 0, rings: 0, picks: 0, hits: 0, paused: false });
+  Object.assign(state, { player: state.player, mode, d: 0, speed: 30, energy: 100, score: 0, stage: 0, lap: 0, tokens: 0, rings: 0, picks: 0, hits: 0, paused: false });
   // practice: index.html#stage3 starts at stage 3
   const from = (clamp(+(/stage(\d)/.exec(location.hash)?.[1] ?? 1), 1, 5) - 1) * PHASE_LEN; state.d = from;
   pendingTokens = 0; ringIx = 0; next = { hit: from + 40, gain: from + 30, ring: from + 160, decor: from }; pos = { x: 0, y: 0 }; target = { x: 0, y: 0 }; hist.length = 0;
@@ -294,7 +295,7 @@ function banner(title, fact, ms = 4200) { $('bannerT').textContent = title; $('b
 function flash(color, op = .7) { const f = $('flash'); f.style.transition = 'none'; f.style.background = color; f.style.opacity = op; requestAnimationFrame(() => { f.style.transition = 'opacity .6s'; f.style.opacity = 0; }); }
 function setStage(i, silent) {
   const st = STAGES[i]; state.stage = i;
-  $('stageT').textContent = st.title; $('stageK').textContent = `Stage ${i + 1} of 5 · Lap ${state.lap + 1}`;
+  $('stageT').textContent = st.title; $('stageK').textContent = `${state.player && state.mode === 'play' ? state.player + ' · ' : ''}Stage ${i + 1} of 5 · Lap ${state.lap + 1}`;
   const [col, k] = FORM[st.form]; core.material.color.set(0xffffff); halo.material.color.set(col); trail.forEach(t => t.material.color.set(col));
   $('formK').textContent = k; $('bar').style.background = st.form === 'photon' ? 'linear-gradient(90deg,#ffb53c,#ffe08a)' : st.form === 'electron' ? 'linear-gradient(90deg,#1aa8d8,#7fe8ff)' : 'linear-gradient(90deg,#7b5cff,#d4c2ff)';
   if (!silent) { banner(st.title, st.fact); flash(i === 2 ? '#ffffff' : '#000000', i === 2 ? .9 : .6); tone(330, 990, .5, 'triangle', .07); }
@@ -323,10 +324,18 @@ $('pause').onclick = () => state.mode === 'play' && setPause(!state.paused);
 $('resume').onclick = () => setPause(false);
 document.addEventListener('visibilitychange', () => { if (document.hidden && state.mode === 'play') setPause(true); });
 function launch() {
+  if (!state.player) { showStart(); return; }
   try { ac ??= new (window.AudioContext || window.webkitAudioContext)(); ac.resume(); } catch {}
   reset('play'); $('ovStart').hidden = true; $('ovEnd').hidden = true; banner(STAGES[0].title, STAGES[0].fact); tone(220, 880, .6, 'triangle', .08);
 }
-$('go').onclick = launch;
+function showStart() { $('ovEnd').hidden = true; $('ovStart').hidden = false; state.mode = 'attract'; reset('attract'); $('pilot').focus(); }
+try { $('pilot').value = localStorage.getItem('photon-dash-name') || ''; } catch {}
+$('startForm').onsubmit = (e) => {
+  e.preventDefault(); const name = $('pilot').value.trim().replace(/\s+/g, ' ').slice(0, 24);
+  if (!name) { $('pilot').focus(); return; }
+  state.player = name; try { localStorage.setItem('photon-dash-name', name); } catch {}
+  launch();
+};
 
 // ---------- scoreboard: one shared top 10 on claude.ai, this device otherwise ----------
 // Shared mode keeps one document per player at scores/<their id> holding their best run; everyone reads, each writes only their own.
@@ -347,7 +356,7 @@ async function renderBoards() {
       const rk = document.createElement('span'); rk.className = 'rk'; rk.textContent = i + 1;
       const img = document.createElement('img'); img.alt = '';
       const nm = document.createElement('span'); nm.className = 'nm';
-      const who = board.shared ? (ps[r.id]?.name || 'A pilot') : (r.name || 'Pilot');
+      const who = r.name || (board.shared ? ps[r.id]?.name : '') || 'A pilot';
       nm.textContent = who + (mine ? ' (you)' : '');
       const sm = document.createElement('small'); sm.textContent = `${STAGE_SHORT[r.stage] ?? 'Sun'}${r.lap ? ` · lap ${r.lap + 1}` : ''} · ${r.tokens ?? 0} tokens`; nm.appendChild(sm);
       if (board.shared) img.src = ps[r.id]?.avatarUrl ?? ''; else { img.style.background = `hsl(${[...who].reduce((a, c) => a + c.charCodeAt(0), 0) * 37 % 360} 55% 45%)`; }
@@ -371,20 +380,15 @@ async function recordScore(run) {
   const note = $('saveNote');
   if (board.shared) {
     if (!board.me) { note.textContent = 'Sign in to claude.ai to put your runs on the board.'; return; }
-    if (run.score <= board.myBest) { note.textContent = `Your best on the board is ${board.myBest.toLocaleString('en-US')}. Beat it to move up.`; return; }
-    try { await board.db.doc('scores/' + board.me).set(run); board.myBest = run.score; note.textContent = 'New personal best, saved to the board.'; }
+    if (run.score <= board.myBest) { note.textContent = `${run.name}, your best on the board is ${board.myBest.toLocaleString('en-US')}. Beat it to move up.`; return; }
+    try { await board.db.doc('scores/' + board.me).set(run); board.myBest = run.score; note.textContent = `New personal best for ${run.name}, saved to the board.`; }
     catch (e) { note.textContent = e?.code === 'invalid_argument' ? 'This page is view-only for you, so your score can\'t be saved. Ask the owner for Contributor access.' : e?.code === 'quota_exceeded' ? 'The scoreboard is full right now.' : 'Couldn\'t reach the scoreboard. Try again after your next run.'; }
     return;
   }
   if (!qualifies(run.score)) { note.textContent = `Not quite top 10 on this device. The board starts at ${Math.floor(board.rows.at(-1).score).toLocaleString('en-US')}.`; return; }
-  $('saveForm').hidden = false; let last = ''; try { last = localStorage.getItem('photon-dash-name') || ''; } catch {}
-  $('pilot').value = last; $('pilot').focus(); note.textContent = 'You made the top 10. Add your name to the board.';
-  $('saveForm').onsubmit = (e) => {
-    e.preventDefault(); const name = $('pilot').value.trim().slice(0, 24) || 'Pilot';
-    const at = Date.now(); board.rows = [...board.rows, { ...run, name, at }].sort((a, b) => b.score - a.score).slice(0, 10); board.justSaved = at;
-    try { localStorage.setItem(LKEY, JSON.stringify(board.rows)); localStorage.setItem('photon-dash-name', name); } catch {}
-    $('saveForm').hidden = true; note.textContent = `Saved. You're #${board.rows.findIndex(r => r.at === at) + 1} on this device.`; renderBoards(); $('again').focus();
-  };
+  const at = run.at; board.rows = [...board.rows, run].sort((a, b) => b.score - a.score).slice(0, 10); board.justSaved = at;
+  try { localStorage.setItem(LKEY, JSON.stringify(board.rows)); } catch {}
+  note.textContent = `Saved. ${run.name} is #${board.rows.findIndex(r => r.at === at) + 1} on this device.`; renderBoards();
 }
 
 function gameOver() {
@@ -397,10 +401,9 @@ function gameOver() {
     <div class="stats"><div>Distance<b>${Math.floor(state.d / 10).toLocaleString('en-US')} m</b></div><div>Pickups<b>${state.picks}</b></div><div>Rings<b>${state.rings}</b></div><div>Tokens<b>${state.tokens}</b></div><div>Hits<b>${state.hits}</b></div></div>
     <p style="color:var(--dim)">${st.fact}</p>
     <div class="note" id="saveNote"></div>
-    <form class="save" id="saveForm" hidden><label for="pilot" class="k" style="flex-basis:100%">Pilot name</label><input id="pilot" maxlength="24" autocomplete="nickname" placeholder="Your name"><button class="btn" type="submit">Save</button></form>
-    <div class="btns"><button class="btn" id="again">Fly again</button><span class="hint">or press Enter</span></div>`;
-  $('ovEnd').hidden = false; $('again').onclick = launch; $('again').focus();
-  recordScore({ score: sc, stage: state.stage, lap: state.lap, tokens: state.tokens, at: Date.now() });
+    <div class="btns"><button class="btn" id="again">Fly again</button><button class="btn" id="change" style="background:transparent;color:var(--sun);border:1px solid var(--sun)">Change pilot</button><span class="hint">Enter flies again</span></div>`;
+  $('ovEnd').hidden = false; $('again').onclick = launch; $('change').onclick = showStart; $('again').focus();
+  recordScore({ name: state.player, score: sc, stage: state.stage, lap: state.lap, tokens: state.tokens, at: Date.now() });
   renderBoards();
 }
 addEventListener('keydown', (e) => { if (e.key === 'Enter' && state.mode === 'over' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON') launch(); });
