@@ -105,7 +105,8 @@
   .linkbtn { background: none; border: 0; padding: 0; color: var(--elec); font: 600 15px/1.4 var(--body); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
   :is(#ovStart, #ovEnd) .lb li.none { grid-template-columns: 1fr; padding: 4px 0; font-size: 16px; }
   .logo { display: block; height: auto; }
-  .logo-start { width: clamp(200px, 26vw, 340px); margin-bottom: 4px; }
+  .logo-start { width: clamp(200px, 26vw, 340px); margin: 0 auto 4px; }
+  .logo-start + .k { text-align: center; }
   .logo-end { width: 180px; }
   .logo-hud { position: absolute; left: 16px; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); width: clamp(96px, 10vw, 150px); opacity: .55; pointer-events: none; }
   #fs { position: absolute; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 5; width: 44px; height: 44px; display: grid; place-items: center; }
@@ -150,7 +151,7 @@
       </ol>
       <p>Your energy drains as you fly. Collect glowing pickups to refill it, and fly through rings for bonuses.</p>
       <form class="save" id="startForm"><label for="pilot" class="k" style="flex-basis:100%">Your pilot name · shown on the scoreboard</label><input id="pilot" maxlength="24" autocomplete="nickname" placeholder="Enter your name" required><button class="btn" id="go" type="submit">Launch</button></form>
-      <div class="hint">Steer with the mouse, a finger, or arrow keys / WASD · P pauses · F full screen · New here? <button class="linkbtn" id="watch" type="button">Watch the 45-second intro</button></div>
+      <div class="hint">Steer with the mouse, a finger, or arrow keys / WASD · P pauses · F full screen · Every run starts with a 45-second REPACSS intro</div>
       <div class="foot">Facility figures follow REPACSS at the GLEAMM microgrid, Reese Technology Center. Supported by the U.S. National Science Foundation under Grant No. 2404438 · repacss.org</div>
     </div>
     <div class="card board"><div class="k bk">Top 10 pilots</div><ol class="lb"></ol></div></div>
@@ -158,7 +159,8 @@
   <div class="ov" id="ovEnd" hidden><div class="ovrow"><div class="card" id="endCard"></div><div class="card board"><div class="k bk">Top 10 pilots</div><ol class="lb"></ol></div></div></div>
   <div class="ov" id="ovIntro" hidden><div class="vwrap">
     <video id="introV" playsinline preload="metadata"><source src="intro.mp4" type="video/mp4"></video>
-    <div class="vbar"><span class="k">REPACSS in 45 seconds · then you fly</span><button class="btn" id="skip">Skip intro</button></div>
+    <div class="vbar"><span class="k">REPACSS in 45 seconds · your run starts right after</span></div>
+    <button class="btn" id="vplay" hidden style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:24px;padding:18px 32px">Play the intro</button>
     <div class="vprog" id="vprog"></div>
   </div></div>
   <div class="ov" id="ovPause" hidden><div class="card"><div class="k">Paused</div><p>Your score so far still counts if you end the run now.</p><div class="btns"><button class="btn" id="resume">Resume</button><button class="btn" id="endRun" style="background:transparent;color:var(--alarm);border:1px solid var(--alarm)">End run</button><span class="hint">P resumes · E ends the run</span></div></div></div>
@@ -402,8 +404,7 @@ $('startForm').onsubmit = (e) => {
   e.preventDefault(); const name = $('pilot').value.trim().replace(/\s+/g, ' ').slice(0, 24);
   if (!name) { $('pilot').focus(); return; }
   state.player = name; try { localStorage.setItem('photon-dash-name', name); } catch {}
-  let seen = false; try { seen = localStorage.getItem('photon-dash-intro') === '1'; } catch {}
-  if (seen) launch(); else playIntro(launch);
+  playIntro(launch);   // the intro is part of every launch from the start screen; it can't be skipped
 };
 // ---------- intro video: REPACSS in 45 seconds (first launch on this browser, or "Watch the intro") ----------
 const INTRO_CUES = [
@@ -421,9 +422,10 @@ const INTRO_CUES = [
 }
 let introDone = null;
 function playIntro(then) {
-  const v = $('introV'); introDone = then; try { localStorage.setItem('photon-dash-intro', '1'); } catch {}
-  $('ovStart').hidden = true; $('ovIntro').hidden = false; v.currentTime = 0; $('skip').focus();
-  v.play().catch(() => { v.controls = true; });   // if autoplay is refused, show the native controls
+  const v = $('introV'); introDone = then;
+  $('ovStart').hidden = true; $('ovIntro').hidden = false; v.currentTime = 0;
+  const go = () => v.play().then(() => { $('vplay').hidden = true; }).catch(() => { $('vplay').hidden = false; $('vplay').focus(); });   // autoplay refused: ask for one tap
+  $('vplay').onclick = go; go();
 }
 function endIntro() {
   const v = $('introV'); if ($('ovIntro').hidden) return;
@@ -432,9 +434,6 @@ function endIntro() {
 $('introV').addEventListener('ended', endIntro);
 $('introV').addEventListener('error', endIntro, true);   // missing video: go straight on
 $('introV').addEventListener('timeupdate', (e) => { $('vprog').style.width = (e.target.currentTime / (e.target.duration || 46) * 100) + '%'; });
-$('skip').onclick = endIntro;
-$('watch').onclick = () => playIntro(() => { $('ovStart').hidden = false; $('pilot').focus(); });
-addEventListener('keydown', (e) => { if (!$('ovIntro').hidden && (e.key === 'Escape' || e.key === 'Enter')) { e.preventDefault(); endIntro(); } });
 
 // ---------- scoreboard: one shared top 10 on claude.ai, this device otherwise ----------
 // Shared mode keeps one document per player at scores/<their id> holding their best run; everyone reads, each writes only their own.

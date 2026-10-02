@@ -67,7 +67,7 @@ To tune the music, change the three numbers at the top of `music.py` (`BED_DB`, 
 - Play: open `game3d/index.html` in a browser (it needs an internet connection for three.js and fonts).
 - Practice a stage: add `#stage1` … `#stage5` to the URL.
 - Scoreboard: the start screen asks for a pilot name, and a top-10 board shows on the start and end screens. On the published claude.ai page the board is shared by everyone who plays (one best run per pilot name). Opened as a local file, it keeps a top 10 on that device.
-- Intro: the first Launch on a browser plays a 46-second intro (`game3d/intro.mp4`, skippable, captioned); "Watch the intro" replays it. Rebuild it with `.venv-tts/bin/python narration.py game_intro && .venv-tts/bin/python game3d/make_intro.py`, which cuts clips from the Photons to Tokens render and adds the narration and music.
+- Intro: every Launch from the start screen plays a 46-second intro first (`game3d/intro.mp4`, captioned, not skippable). Rebuild it with `.venv-tts/bin/python narration.py game_intro && .venv-tts/bin/python game3d/make_intro.py`, which cuts clips from the Photons to Tokens render and adds the narration and music.
 - Full screen: the corner button or F.
 
 ## Project layout
