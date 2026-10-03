@@ -1,114 +1,37 @@
-# REPACSS — From Photons to Tokens
+# Photon Dash — a REPACSS game
 
-> **Branch `photon-dash-3d-runner-game`:** this branch adds the 3D runner game *Photon Dash* (`game3d/`). See [Branches](#branches) for the other variants.
+*Photon Dash* is a 3D browser runner about **REPACSS** (REmotely-managed Power Aware Computing Systems and Services) at Texas Tech University, supported by NSF Award 2404438.
 
-A 7-minute narrated explainer video for **REPACSS** (REmotely-managed Power Aware Computing Systems and Services) at Texas Tech University, supported by NSF Award 2404438.
+You ride one photon from the Sun, through the West Texas sky and into the 350 kW solar array at the GLEAMM microgrid. From there you travel down the power bus as an electron, through the REPACSS cluster, and out of the tensor cores as tokens. Each of the five stages opens with a real fact about the facility:
 
-It follows energy from the sun to the GLEAMM microgrid at the Reese Technology Center, through the solar array, battery, generator and grid, into the REPACSS cluster, and out as AI tokens. It then covers the project's research challenges: power instrumentation, remote management, energy-aware scheduling, and checkpoint/restore.
+1. Leaving the Sun
+2. The West Texas sky
+3. Silicon to the power bus
+4. Into the REPACSS cluster
+5. Tensor cores to tokens
 
-[![REPACSS — From Photons to Tokens (title card)](docs/thumbnail.jpg)](https://github.com/Artlands/REPACSS_animation/releases/download/v1.0.0/REPACSS_photons_to_tokens.mp4)
+The game lives in `game3d/`. All of its code is in `index.html`, built with [three.js](https://threejs.org) (loaded from a CDN); the folder also holds the intro video and two logos.
 
-**▶ Watch / download the video:** [REPACSS_photons_to_tokens.mp4 (release v1.0.0)](https://github.com/Artlands/REPACSS_animation/releases/download/v1.0.0/REPACSS_photons_to_tokens.mp4) — 7:00, 1080p, with captions. See all [releases](https://github.com/Artlands/REPACSS_animation/releases).
+## Play
 
-Every frame is rendered from code. The scenes are written in [three.js](https://threejs.org), headless Chrome captures them frame by frame, and ffmpeg encodes the result. The narration is synthesized speech, and the music bed is generated in code.
+Play online at **[claude.ai/artifact/N62dhZ5E4VnShD3HJtuEP6](https://claude.ai/artifact/N62dhZ5E4VnShD3HJtuEP6)**, or open `game3d/index.html` in a browser. It needs an internet connection for three.js and the fonts.
 
-## Branches
+- **Steer:** mouse or touch, or the arrow keys / WASD.
+- **Pause:** P or Esc. While paused, E ends the run.
+- **Full screen:** the corner button or F.
+- **Intro:** each time you press Launch on the start screen, it plays a 45-second narrated intro (`game3d/intro.mp4`, captioned). Skip it with the Skip button or Esc.
+- **Practice a stage:** add `#stage1` … `#stage5` to the URL.
+- **Scoreboard:** the start screen asks for a pilot name, and the start and end screens show a top-10 board. On the [online version](https://claude.ai/artifact/N62dhZ5E4VnShD3HJtuEP6), everyone who plays shares one board, with one best run per pilot name. When you open the game as a local file, the board is kept only on that device.
 
-Each variant lives on its own branch, built on `main`.
+## The intro video
 
-| Branch | What it adds |
-|---|---|
-| [`main`](https://github.com/Artlands/REPACSS_animation/tree/main) | *From Photons to Tokens*, the 7-minute narrated explainer |
-| [`one-day-story`](https://github.com/Artlands/REPACSS_animation/tree/one-day-story) | *One Day at REPACSS*, a 3-minute story of a single summer day at the site |
-| [`job-story`](https://github.com/Artlands/REPACSS_animation/tree/job-story) | *The Journey of Job 41827*, a 3-minute story of one research job. Built on `one-day-story`, so it has both stories |
-| [`follow-the-sun-scheduling-game`](https://github.com/Artlands/REPACSS_animation/tree/follow-the-sun-scheduling-game) | *Follow the Sun*, a browser game: run the facility for one day and schedule jobs around the sunlight |
-| [`photon-dash-3d-runner-game`](https://github.com/Artlands/REPACSS_animation/tree/photon-dash-3d-runner-game) | *Photon Dash*, a 3D runner from the Sun to tokens, with a narrated intro and a scoreboard |
-| [`hand-drawn-animation`](https://github.com/Artlands/REPACSS_animation/tree/hand-drawn-animation) | The main video restyled as chalk and pastel on dark paper |
-
-## Pipeline
-
-```
-narration.py ──► build/narration.wav, build/captions.srt, timeline.json
-                        │ (sentence start times drive every animation beat)
-render.mjs   ──► build/REPACSS_photons_to_tokens_nomusic.mp4
-music.py     ──► build/REPACSS_photons_to_tokens.mp4   (final: video + narration + music + captions)
-```
-
-1. **`narration.py`** synthesizes the script one sentence at a time with Qwen3-TTS 1.7B (via `mlx-audio`). It clones a single reference clip so every sentence has the same voice.
-   - Each take is transcribed with Whisper and pitch-checked. Takes that misread a number or drift from the reference voice are re-generated.
-   - Takes are cached in `build/tts/`, so editing one sentence re-synthesizes only that sentence.
-2. **`render.mjs`** serves `index.html`, steps `window.renderAt(t)` frame by frame in headless Chrome at 30 fps, and pipes the frames to ffmpeg.
-3. **`music.py`** synthesizes an ambient pad-and-pluck bed. Using `timeline.json`, it ducks the music under each spoken sentence and lifts it at the intro and the end card. It then remuxes the rendered video with the new audio track, so changing the music doesn't require a re-render.
-
-## Requirements
-
-- **macOS on Apple Silicon** (the TTS and Whisper models run on MLX)
-- **Google Chrome**, at `/Applications/Google Chrome.app` (see `render.mjs`)
-- **Node.js** 20+ and **ffmpeg**
-- **Python 3.12** with `mlx-audio`, `mlx-whisper`, `numpy`, `scipy`. The scripts look for this environment at `.venv-tts/`.
-
-```bash
-npm install
-uv venv .venv-tts --python 3.12
-uv pip install --python .venv-tts/bin/python mlx-audio mlx-whisper numpy scipy
-```
-
-The models (`mlx-community/Qwen3-TTS-12Hz-1.7B-Base-bf16`, `mlx-community/whisper-large-v3-turbo`) download from Hugging Face on first run.
-
-## Usage
-
-```bash
-.venv-tts/bin/python narration.py      # 1. narration + timeline (only re-synthesizes changed sentences)
-node render.mjs video                  # 2. full render (~10 min on an M-series Mac)
-.venv-tts/bin/python music.py          # 3. mix music → build/REPACSS_photons_to_tokens.mp4
-```
-
-Previewing and checking:
-
-```bash
-node render.mjs stills 12,45.5,200     # PNG stills at those times → build/stills/
-node render.mjs video 180 240          # partial preview clip → build/preview_180-240.mp4
-node render.mjs zcheck                 # report coplanar overlapping faces (z-fighting) per scene
-```
-
-To scrub interactively, open `index.html` through any static server (for example `npx serve`) and add `?t=95` to show a single frame or `?play=95` to play from that time.
-
-To tune the music, change the three numbers at the top of `music.py` (`BED_DB`, `DUCK_DB`, `SWELL_DB`), then rerun step 3.
-
-## Game: Photon Dash (3D)
-
-`game3d/index.html` is a 3D runner built with three.js (loaded from a CDN). You ride one photon from the Sun, through the West Texas sky and into the 350 kW array, then down the power bus as an electron, through the REPACSS cluster, and out of the tensor cores as tokens. Each stage opens with a real facility fact.
-
-- Play: open `game3d/index.html` in a browser (it needs an internet connection for three.js and fonts).
-- Practice a stage: add `#stage1` … `#stage5` to the URL.
-- Scoreboard: the start screen asks for a pilot name, and a top-10 board shows on the start and end screens. On the published claude.ai page the board is shared by everyone who plays (one best run per pilot name). Opened as a local file, it keeps a top 10 on that device.
-- Intro: every Launch from the start screen plays a 45-second intro first (`game3d/intro.mp4`, captioned, skippable). Rebuild it with `.venv-tts/bin/python narration.py game_intro && .venv-tts/bin/python game3d/make_intro.py`, which cuts clips from the Photons to Tokens render and adds the narration and music.
-- Full screen: the corner button or F.
-
-## Project layout
-
-| Path | Contents |
-|---|---|
-| `src/main.js` | Renderer, post-processing (bloom), scene switching and fades, `window.renderAt(t)` |
-| `src/lib.js` | Easing, overlay UI, sprites and particle flows; solar array and rack/cabinet builders (`RACKS` holds the per-rack node layout) |
-| `src/nodes.js` | Detailed server models: Dell R7625 CPU node, R760xa GPU node (4 × H100 NVL), R760xd2 storage node |
-| `src/scenes/*.js` | One file per scene, in story order: `intro` → `site` → `problem` → `energy` → `photon` → `compute` → `tokens` → `measure` → `remote` → `schedule` → `checkpoint` → `outro` |
-| `game3d/` | *Photon Dash*: `index.html` (the game), `intro.mp4` and `make_intro.py` (the narrated intro), logos |
-| `src/zcheck.js` | Z-fighting detector used by `render.mjs zcheck` |
-| `narration.py` | The script (one entry per scene), spoken-form fixes, TTS and QA |
-| `timeline.json` | Generated: scene start times, durations and sentence times |
-| `timeline_game_intro.json` | The same, for the game intro narration |
-| `assets/` | Logos, Earth textures, high-resolution Texas patch, TTS voice reference |
-| `build/` | Generated outputs (git-ignored) |
-
-Each scene builder receives its sentence start times (`sc.s(i)`), so camera moves, labels and cards stay locked to the narration. After changing the script, rerun the pipeline and the visuals follow the new timing.
+`game3d/intro.mp4` is cut from *REPACSS — From Photons to Tokens*, a 7-minute explainer video rendered from code. The video and its source live in [Artlands/REPACSS_animation](https://github.com/Artlands/REPACSS_animation). The pipeline that cut this intro (`game3d/make_intro.py` with the narration, render and music scripts) is in this repo's history at commit [`b28e7d4`](https://github.com/Artlands/REPACSS_game/tree/b28e7d4c5afa81811ab4bedb56f9ff3e28ff5812).
 
 ## Sources and credits
 
 - Facility, cluster, node and network details come from REPACSS project materials. GLEAMM building and site layout follow REPACSS site photos and the [repacss.org gallery](https://www.repacss.org/gallery/).
-- Earth imagery: NASA Visible Earth, *Blue Marble: Next Generation* (July 2004), including a 240 px/degree crop over West Texas. City lights, clouds and ocean mask come from the three.js example textures (NASA-derived).
-- Harmonic-distortion profiles and per-code energy figures in the `measure` scene are illustrative and are labeled as such on screen.
+- Earth imagery in the intro: NASA Visible Earth, *Blue Marble: Next Generation* (July 2004), including a 240 px/degree crop over West Texas. City lights, clouds and ocean mask come from the three.js example textures (NASA-derived).
 
 ## License
 
-Code is released under the [MIT License](LICENSE). The REPACSS, Texas Tech and NSF names and logos in `assets/` are trademarks of their owners and are not covered by this license. The Earth imagery is NASA public-domain data.
+Code is released under the [MIT License](LICENSE). The REPACSS, Texas Tech and NSF names and logos in `game3d/` are trademarks of their owners and are not covered by this license. The Earth imagery in the intro is NASA public-domain data.

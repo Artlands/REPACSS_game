@@ -1,5 +1,1 @@
-node_modules/
-.venv-tts/
-build/
 .DS_Store
-__pycache__/
